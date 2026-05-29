@@ -12,9 +12,6 @@ class InsurerIntegrationController extends Controller
 {
     public function store(StoreInsurerIntegrationRequest $request)
     {
-        \Log::info('Received request to create insurer integration', [
-            'request_data' => $request->all(),
-        ]);
         $validated = $request->validated();
         $otherAttributes = Arr::get($validated, 'other_attributes', []);
 
