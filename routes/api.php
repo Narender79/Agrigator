@@ -5,4 +5,6 @@ use App\Http\Controllers\Api\InsurerIntegrationController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/insurers', [InsurerController::class, 'store']);
+Route::match(['put', 'patch'], '/insurers/{insurer}', [InsurerController::class, 'update']);
 Route::post('/insurer-integrations', [InsurerIntegrationController::class, 'store']);
+Route::match(['put', 'patch'], '/insurer-integrations/{insurerIntegration}', [InsurerIntegrationController::class, 'update']);

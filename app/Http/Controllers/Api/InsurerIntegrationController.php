@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreInsurerIntegrationRequest;
+use App\Http\Requests\Api\UpdateInsurerIntegrationRequest;
 use App\Models\Insurance\InsurerIntegration;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Crypt;
@@ -31,6 +32,31 @@ class InsurerIntegrationController extends Controller
             'message' => 'Insurer integration created successfully.',
             'data' => $this->presentIntegration($integration->fresh()),
         ], 201);
+    }
+
+    public function update(UpdateInsurerIntegrationRequest $request, InsurerIntegration $insurerIntegration)
+    {
+        $validated = $request->validated();
+        $otherAttributes = array_key_exists('other_attributes', $validated)
+            ? Arr::get($validated, 'other_attributes', [])
+            : $insurerIntegration->other_attributes;
+
+        $insurerIntegration->update([
+            'insurer_id' => array_key_exists('insurer_id', $validated) ? $validated['insurer_id'] : $insurerIntegration->insurer_id,
+            'api_base_url' => array_key_exists('api_base_url', $validated) ? $validated['api_base_url'] : $insurerIntegration->api_base_url,
+            'auth_type' => array_key_exists('auth_type', $validated) ? $validated['auth_type'] : $insurerIntegration->auth_type,
+            'client_id' => array_key_exists('client_id', $validated) ? $this->encryptIfPresent($validated['client_id']) : $insurerIntegration->client_id,
+            'client_secret' => array_key_exists('client_secret', $validated) ? $this->encryptIfPresent($validated['client_secret']) : $insurerIntegration->client_secret,
+            'environment' => array_key_exists('environment', $validated) ? $validated['environment'] : $insurerIntegration->environment,
+            'other_attributes' => $otherAttributes,
+            'created_by' => array_key_exists('created_by', $validated) ? $validated['created_by'] : $insurerIntegration->created_by,
+            'updated_by' => array_key_exists('updated_by', $validated) ? $validated['updated_by'] : $insurerIntegration->updated_by,
+        ]);
+
+        return response()->json([
+            'message' => 'Insurer integration updated successfully.',
+            'data' => $this->presentIntegration($insurerIntegration->fresh()),
+        ]);
     }
 
     protected function encryptIfPresent(?string $value): ?string

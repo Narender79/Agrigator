@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreInsurerRequest;
+use App\Http\Requests\Api\UpdateInsurerRequest;
 use App\Models\Insurance\Insurer;
 
 class InsurerController extends Controller
@@ -26,6 +27,26 @@ class InsurerController extends Controller
             'message' => 'Insurer created successfully.',
             'data' => $this->presentInsurer($insurer->fresh()),
         ], 201);
+    }
+
+    public function update(UpdateInsurerRequest $request, Insurer $insurer)
+    {
+        $validated = $request->validated();
+
+        $insurer->update([
+            'user_id' => array_key_exists('user_id', $validated) ? $validated['user_id'] : $insurer->user_id,
+            'company_name' => array_key_exists('company_name', $validated) ? $validated['company_name'] : $insurer->company_name,
+            'regulatory_reg_no' => array_key_exists('regulatory_reg_no', $validated) ? $validated['regulatory_reg_no'] : $insurer->regulatory_reg_no,
+            'license_expiry' => array_key_exists('license_expiry', $validated) ? $validated['license_expiry'] : $insurer->license_expiry,
+            'status' => array_key_exists('status', $validated) ? $validated['status'] : $insurer->status,
+            'created_by' => array_key_exists('created_by', $validated) ? $validated['created_by'] : $insurer->created_by,
+            'updated_by' => array_key_exists('updated_by', $validated) ? $validated['updated_by'] : $insurer->updated_by,
+        ]);
+
+        return response()->json([
+            'message' => 'Insurer updated successfully.',
+            'data' => $this->presentInsurer($insurer->fresh()),
+        ]);
     }
 
     protected function presentInsurer(Insurer $insurer): array
