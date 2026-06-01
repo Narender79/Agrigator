@@ -22,6 +22,17 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'mobile',
+        'role',
+        'device_id',
+        'device_type',
+        'os_name',
+        'app_version',
+        'ip_address',
+        'lat',
+        'long',
+        'browser_name',
+        'status',
     ];
 
     /**
