@@ -2,16 +2,16 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, SoftDeletes, HasApiTokens;
 
     /**
      * The attributes that are mass assignable.
@@ -33,6 +33,8 @@ class User extends Authenticatable
         'long',
         'browser_name',
         'status',
+        'created_by',
+        'updated_by',
     ];
 
     /**
@@ -55,6 +57,16 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'lat' => 'decimal:8',
+            'long' => 'decimal:8',
         ];
+    }
+    public function partner()
+    {
+        return $this->hasOne(Partner::class);
+    }
+    public function loginAttempts()
+    {
+        return $this->hasMany(UserLoginAttempt::class);
     }
 }

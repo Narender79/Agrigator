@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use App\Repositories\Contracts\VehicleMappingRepositoryInterface;
+use App\Repositories\Eloquent\VehicleMappingRepository;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -11,7 +13,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Bind the Mapping Interface to its Eloquent Implementation
+        $this->app->bind(
+            VehicleMappingRepositoryInterface::class,
+            VehicleMappingRepository::class
+        );
     }
 
     /**
