@@ -21,6 +21,42 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
 
 Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
+## Insurer OAuth Token Cache
+
+The application resolves insurer access tokens through the reusable helper in `app/Http/Controllers/Controller.php`. When an insurer uses `OAUTH2`, the flow works like this:
+
+1. The controller looks up the insurer integration by `insurer_id`.
+2. It builds the Redis cache key from `other_attributes.cache_key` when present, otherwise it uses the default format `insurer:{insurer_id}:oauth2:access_token`.
+3. It checks Redis first and returns the cached token immediately when one is available.
+4. If the cache is empty, it calls the OAuth token endpoint, stores the token payload in Redis, and returns the new access token.
+
+### Cached Value
+
+The Redis entry stores the token plus metadata so you can inspect expiry information while debugging:
+
+- `access_token`
+- `token_type`
+- `expires_in`
+- `cached_at`
+- `expires_at`
+
+The helper also applies an expiry buffer from `other_attributes.expiry_buffer_seconds` when present. If not provided, the default buffer is 60 seconds.
+
+### Redis Client
+
+Redis uses the configured client from `config/database.php`. If the PHP `redis` extension is not installed, the application falls back to Predis automatically.
+
+### Test Endpoint
+
+Use the following endpoint to verify the token resolver and Redis cache behavior for a given insurer integration:
+
+```bash
+curl -X GET "http://your-domain.test/api/insurer-integrations/1/access-token" \
+	-H "Accept: application/json"
+```
+
+Replace `1` with the insurer integration ID you want to test. The first request should fetch a fresh token and cache it in Redis. The next request should return the cached token until the TTL expires.
+
 ## Learning Laravel
 
 Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.

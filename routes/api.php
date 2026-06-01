@@ -11,3 +11,4 @@ Route::post('/insurer-integrations', [InsurerIntegrationController::class, 'stor
 Route::match(['put', 'patch'], '/insurer-integrations/{insurerIntegration}', [InsurerIntegrationController::class, 'update']);
 
 Route::post('/login', [User::class, 'login']);
+Route::get('/insurer-integrations/{insurerIntegration}/access-token', [InsurerIntegrationController::class, 'accessToken']);
