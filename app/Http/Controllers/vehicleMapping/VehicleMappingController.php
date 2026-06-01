@@ -1,20 +1,20 @@
 <?php
 
-namespace App\Http\Controllers\TataAig;
+namespace App\Http\Controllers\vehicleMapping;
 
 use App\Http\Controllers\Controller;
-use App\Services\TataAigMappingService;
+use App\Services\VehicleMappingService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
-class TataAigMappingController extends Controller
+class VehicleMappingController extends Controller
 {
-    protected TataAigMappingService $mappingService;
+    protected VehicleMappingService $mappingService;
 
     /**
      * Inject the Service Layer
      */
-    public function __construct(TataAigMappingService $mappingService)
+    public function __construct(VehicleMappingService $mappingService)
     {
         $this->mappingService = $mappingService;
     }

@@ -3,8 +3,8 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use App\Repositories\Contracts\TataAigMappingRepositoryInterface;
-use App\Repositories\Eloquent\TataAigMappingRepository;
+use App\Repositories\Contracts\VehicleMappingRepositoryInterface;
+use App\Repositories\Eloquent\VehicleMappingRepository;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -15,8 +15,8 @@ class AppServiceProvider extends ServiceProvider
     {
         // Bind the Mapping Interface to its Eloquent Implementation
         $this->app->bind(
-            TataAigMappingRepositoryInterface::class,
-            TataAigMappingRepository::class
+            VehicleMappingRepositoryInterface::class,
+            VehicleMappingRepository::class
         );
     }
 

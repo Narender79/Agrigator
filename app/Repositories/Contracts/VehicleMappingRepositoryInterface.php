@@ -4,7 +4,7 @@ namespace App\Repositories\Contracts;
 
 use Illuminate\Support\Collection;
 
-interface TataAigMappingRepositoryInterface
+interface VehicleMappingRepositoryInterface
 {
     public function getActiveMakes(): Collection;
 

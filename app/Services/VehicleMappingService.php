@@ -2,14 +2,14 @@
 
 namespace App\Services;
 
-use App\Repositories\Contracts\TataAigMappingRepositoryInterface;
+use App\Repositories\Contracts\VehicleMappingRepositoryInterface;
 use Illuminate\Support\Collection;
 
-class TataAigMappingService
+class VehicleMappingService
 {
-    protected TataAigMappingRepositoryInterface $mappingRepo;
+    protected VehicleMappingRepositoryInterface $mappingRepo;
 
-    public function __construct(TataAigMappingRepositoryInterface $mappingRepo)
+    public function __construct(VehicleMappingRepositoryInterface $mappingRepo)
     {
         $this->mappingRepo = $mappingRepo;
     }

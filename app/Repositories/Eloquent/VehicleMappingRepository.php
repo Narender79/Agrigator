@@ -5,11 +5,11 @@ namespace App\Repositories\Eloquent;
 use App\Models\MakeMapping;
 use App\Models\ModelMapping;
 use App\Models\TrimMapping;
-use App\Repositories\Contracts\TataAigMappingRepositoryInterface;
+use App\Repositories\Contracts\VehicleMappingRepositoryInterface;
 use Illuminate\Support\Collection;
 use Override;
 
-class TataAigMappingRepository implements TataAigMappingRepositoryInterface
+class VehicleMappingRepository implements VehicleMappingRepositoryInterface
 {
     protected MakeMapping $makeMapping;
     protected ModelMapping $modelMapping;

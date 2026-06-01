@@ -4,7 +4,8 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use App\Models\InsurerIntegration; // Add this line
+// use App\Models\InsurerIntegration; // Add this line
+use App\Models\Insurance\InsurerIntegration;
 use Illuminate\Support\Facades\Crypt; // Add this line
 
 class TataAigMasterService
@@ -20,30 +21,26 @@ class TataAigMasterService
     protected ?string $accessToken = null;
     public function __construct()
     {
-        // 1. Fetch credentials dynamically from the database
-        $integration = InsurerIntegration::where('insurer_id', 1)->first();
+        $currentEnv = config('app.env', 'uat');
+        // Fetch credentials matching the dynamic environment
+        $integration = InsurerIntegration::where('insurer_id', 1)
+            ->where('environment', $currentEnv)
+            ->first();
         if ($integration) {
-            // Decrypt the encrypted database columns
+            // Decrypt standard database columns
             $this->clientId = Crypt::decryptString($integration->client_id);
             $this->clientSecret = Crypt::decryptString($integration->client_secret);
-
-            // Read parameters from other_attributes array
+            // Read custom values from dynamic JSON attributes
             $attrs = $integration->other_attributes ?? [];
             $this->tokenUrl = $attrs['token_url'] ?? $integration->api_base_url;
             $this->scope = $attrs['scope'] ?? 'https://api.iorta.in/write';
             $this->timeout = $attrs['timeout'] ?? 15;
-        } else {
-            // Fallback to config files if the DB entry is missing
-            $this->clientId = config('services.tata_aig.client_id');
-            $this->clientSecret = config('services.tata_aig.client_secret');
-            $this->tokenUrl = config('services.tata_aig.base_url') . '/access-gateway/oauth2/token';
-            $this->scope = 'https://api.iorta.in/write';
-            $this->timeout = 15;
+
+            // Read Resource API endpoint and API Key dynamically from DB if present
+            $this->baseUrl = $attrs['resource_base_url'] ?? config('services.tata_aig.base_url', 'https://uatapigw.tataaig.com');
+            $this->apiKey = $attrs['api_key'] ?? config('services.tata_aig.api_key', '5QerRezeZs3PrVdLQu79c1v9Nsh5S7BOan26zc7P');
+            $this->productCode = $attrs['product_code'] ?? '3187';
         }
-        // 2. Fetch the resource API endpoint and api_key
-        $this->baseUrl = config('services.tata_aig.base_url', 'https://uatapigw.tataaig.com');
-        $this->apiKey = config('services.tata_aig.api_key', '5QerRezeZs3PrVdLQu79c1v9Nsh5S7BOan26zc7P');
-        $this->productCode = config('services.tata_aig.product_code', '3187');
     }
 
     protected function getAccessToken(): string

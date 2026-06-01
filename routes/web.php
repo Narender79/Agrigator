@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\TataAig\TataAigMappingController;
+use App\Http\Controllers\vehicleMapping\VehicleMappingController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -13,8 +13,8 @@ Route::get('/test', function () {
 });
 
 
-Route::prefix('api/insurance/tata-aig')->group(function () {
-    Route::get('/makes', [TataAigMappingController::class, 'getMakes']);
-    Route::get('/models', [TataAigMappingController::class, 'getModels']);
-    Route::get('/trims', [TataAigMappingController::class, 'getTrims']);
+Route::prefix('api/insurance')->group(function () {
+    Route::get('/makes', [VehicleMappingController::class, 'getMakes']);
+    Route::get('/models', [VehicleMappingController::class, 'getModels']);
+    Route::get('/trims', [VehicleMappingController::class, 'getTrims']);
 });
