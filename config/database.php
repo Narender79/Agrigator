@@ -3,6 +3,17 @@
 use Illuminate\Support\Str;
 use Pdo\Mysql;
 
+$redisHosts = json_decode((string) env('REDIS_HOSTS', '[]'), true);
+$redisPrimaryHost = is_array($redisHosts) && ! empty($redisHosts[0]) && is_array($redisHosts[0]) ? $redisHosts[0] : [];
+
+$redisHost = $redisPrimaryHost['host'] ?? env('REDIS_HOST', '127.0.0.1');
+$redisPort = $redisPrimaryHost['port'] ?? env('REDIS_PORT', '6379');
+$redisUsername = $redisPrimaryHost['username'] ?? env('REDIS_USERNAME');
+$redisPassword = $redisPrimaryHost['password'] ?? env('REDIS_PASSWORD');
+$redisDefaultDatabase = $redisPrimaryHost['database'] ?? env('REDIS_DB', '0');
+$redisCacheDatabase = $redisPrimaryHost['cache_database'] ?? env('REDIS_CACHE_DB', '1');
+$redisUrl = $redisPrimaryHost['url'] ?? env('REDIS_URL');
+
 return [
 
     /*
@@ -154,12 +165,12 @@ return [
         ],
 
         'default' => [
-            'url' => env('REDIS_URL'),
-            'host' => env('REDIS_HOST', '127.0.0.1'),
-            'username' => env('REDIS_USERNAME'),
-            'password' => env('REDIS_PASSWORD'),
-            'port' => env('REDIS_PORT', '6379'),
-            'database' => env('REDIS_DB', '0'),
+            'url' => $redisUrl,
+            'host' => $redisHost,
+            'username' => $redisUsername,
+            'password' => $redisPassword,
+            'port' => $redisPort,
+            'database' => $redisDefaultDatabase,
             'max_retries' => env('REDIS_MAX_RETRIES', 3),
             'backoff_algorithm' => env('REDIS_BACKOFF_ALGORITHM', 'decorrelated_jitter'),
             'backoff_base' => env('REDIS_BACKOFF_BASE', 100),
@@ -167,12 +178,12 @@ return [
         ],
 
         'cache' => [
-            'url' => env('REDIS_URL'),
-            'host' => env('REDIS_HOST', '127.0.0.1'),
-            'username' => env('REDIS_USERNAME'),
-            'password' => env('REDIS_PASSWORD'),
-            'port' => env('REDIS_PORT', '6379'),
-            'database' => env('REDIS_CACHE_DB', '1'),
+            'url' => $redisUrl,
+            'host' => $redisHost,
+            'username' => $redisUsername,
+            'password' => $redisPassword,
+            'port' => $redisPort,
+            'database' => $redisCacheDatabase,
             'max_retries' => env('REDIS_MAX_RETRIES', 3),
             'backoff_algorithm' => env('REDIS_BACKOFF_ALGORITHM', 'decorrelated_jitter'),
             'backoff_base' => env('REDIS_BACKOFF_BASE', 100),
