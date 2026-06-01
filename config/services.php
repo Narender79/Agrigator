@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    'tata_aig' => [
+        'base_url' => env('TATA_AIG_BASE_URL'),
+        'api_key' => env('TATA_AIG_API_KEY'),
+        'client_id' => env('TATA_AIG_CLIENT_ID'),
+        'client_secret' => env('TATA_AIG_CLIENT_SECRET'),
+        'product_code' => env('TATA_AIG_PRODUCT_CODE', '3187'),
+    ],
+
 ];
