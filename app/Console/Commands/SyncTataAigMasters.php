@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Insurer;
+use App\Models\Insurance\Insurer;
 use App\Models\Make;
 use App\Models\VehicleModel;
 use App\Models\Trim;
@@ -11,7 +11,6 @@ use App\Models\ModelMapping;
 use App\Models\TrimMapping;
 use App\Services\TataAigMasterService;
 use Illuminate\Console\Command;
-use Illuminate\Support\Collection;
 
 class SyncTataAigMasters extends Command
 {
@@ -84,9 +83,7 @@ class SyncTataAigMasters extends Command
             }
 
             $makeKey = "{$insurer->id}-{$droomMake->id}";
-            $this->info($tataMakeCode);
-            $this->info(" , ");
-            $this->info($droomMake->id);
+            $this->info($tataMakeCode . " , " . $droomMake->id);
             $makeMappings[$makeKey] ??= [
                 'insurer_id'        => $insurer->id,
                 'dr_make_id'        => $droomMake->id,
@@ -115,9 +112,7 @@ class SyncTataAigMasters extends Command
 
                 $modelKey = "{$insurer->id}-{$droomModel->id}";
 
-                $this->info($tataMakeCode);
-                $this->info(" , ");
-                $this->info($droomModel->id);
+                $this->info($tataModelCode . " , " . $droomMake->id);
                 $modelMappings[$modelKey] ??= [
                     'insurer_id'         => $insurer->id,
                     'category_id'        => $droomModel->category_id,
@@ -153,10 +148,7 @@ class SyncTataAigMasters extends Command
                     }
 
                     $trimKey = "{$insurer->id}-{$droomTrim->id}";
-
-                    $this->info($tataVariantCode);
-                    $this->info(" , ");
-                    $this->info($droomTrim->id);
+                    $this->info($tataVariantCode . " , " . $droomMake->id);
                     $trimMappings[$trimKey] ??= [
                         'insurer_id'        => $insurer->id,
                         'dr_make_id'        => $droomMake->id,
