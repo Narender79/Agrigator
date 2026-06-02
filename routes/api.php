@@ -11,6 +11,8 @@ Route::post('/login', [User::class, 'login']);
 
 Route::post('/users', [ApiUserController::class, 'store']);
 Route::match(['put', 'patch'], '/users/{user}', [ApiUserController::class, 'update']);
+Route::post('/partners', 'App\\Http\\Controllers\\Api\\PartnerController@store');
+Route::match(['put', 'patch'], '/partners/{partner}', 'App\\Http\\Controllers\\Api\\PartnerController@update');
 Route::post('/partner-credentials', [PartnerCredentialController::class, 'store']);
 
 

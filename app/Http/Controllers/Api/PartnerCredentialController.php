@@ -13,27 +13,18 @@ class PartnerCredentialController extends Controller
     public function store(Request $request)
     {
         $validated = Validator::make($request->all(), [
-            'partner_id' => ['required', 'integer'],
+            'partner_id' => ['required', 'integer','unique:partner_credentials,partner_id'],
             'api_key' => ['required', 'string', 'max:64', 'unique:partner_credentials,api_key'],
             'api_secret' => ['required', 'string', 'max:255'],
             'status' => ['sometimes', 'required', 'string', 'in:active,inactive'],
-            'rate_limit_tier' => ['sometimes', 'nullable', 'string', 'max:50', 'in:standard,premium,custom'],
+            'rate_limit_tier' => ['sometimes', 'nullable', 'string', 'max:50'],
         ], [
             'partner_id.required' => 'The partner_id field is required.',
             'partner_id.exists' => 'The specified partner does not exist.',
             'api_key.unique' => 'A partner credential already exists for this API key.',
             'status.in' => 'The status field must be either active or inactive.',
-            'rate_limit_tier.in' => 'The rate_limit_tier field must be standard, premium, or custom.',
         ])->validate();
 
-        $partner = $request->attributes->get('merchant_partner');
-
-        // Ensure the authenticated merchant is creating a credential for their own partner record
-        if ((int) $validated['partner_id'] !== (int) $partner->id) {
-            return response()->json([
-                'message' => 'Forbidden to create credential for this partner.',
-            ], 403);
-        }
 
         $credential = PartnerCredential::query()->create([
             'partner_id' => $validated['partner_id'],
