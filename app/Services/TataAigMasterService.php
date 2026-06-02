@@ -4,9 +4,8 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-// use App\Models\InsurerIntegration; // Add this line
 use App\Models\Insurance\InsurerIntegration;
-use Illuminate\Support\Facades\Crypt; // Add this line
+use Illuminate\Support\Facades\Crypt;
 
 class TataAigMasterService
 {
@@ -18,28 +17,58 @@ class TataAigMasterService
     protected string $tokenUrl;
     protected string $scope;
     protected int $timeout;
+    protected int $insurerId;
+    protected string $cacheKey;
+    protected int $expiryBufferSeconds;
     protected ?string $accessToken = null;
+
     public function __construct()
     {
         $currentEnv = config('app.env', 'uat');
-        // Fetch credentials matching the dynamic environment
+        
+        // 1. Try to find the record matching the current environment
         $integration = InsurerIntegration::where('insurer_id', 1)
             ->where('environment', $currentEnv)
             ->first();
+
+        // 2. Fallback to any first matching insurer_id = 1 configuration if environment is different (e.g. local)
+        if (!$integration) {
+            $integration = InsurerIntegration::where('insurer_id', 1)->first();
+        }
+
         if ($integration) {
+            $this->insurerId = $integration->insurer_id;
             // Decrypt standard database columns
             $this->clientId = Crypt::decryptString($integration->client_id);
             $this->clientSecret = Crypt::decryptString($integration->client_secret);
+            
             // Read custom values from dynamic JSON attributes
             $attrs = $integration->other_attributes ?? [];
             $this->tokenUrl = $attrs['token_url'] ?? $integration->api_base_url;
             $this->scope = $attrs['scope'] ?? 'https://api.iorta.in/write';
-            $this->timeout = $attrs['timeout'] ?? 15;
+            $this->timeout = (int) ($attrs['timeout'] ?? 15);
 
-            // Read Resource API endpoint and API Key dynamically from DB if present
-            $this->baseUrl = $attrs['resource_base_url'] ?? config('services.tata_aig.base_url', 'https://uatapigw.tataaig.com');
-            $this->apiKey = $attrs['api_key'] ?? config('services.tata_aig.api_key', '5QerRezeZs3PrVdLQu79c1v9Nsh5S7BOan26zc7P');
-            $this->productCode = $attrs['product_code'] ?? '3187';
+            // Cache attributes
+            $this->cacheKey = $attrs['cache_key'] ?? sprintf('insurer:%d:oauth2:access_token', $this->insurerId);
+            $this->expiryBufferSeconds = (int) ($attrs['expiry_buffer_seconds'] ?? 60);
+
+            // Read Resource API endpoint and API Key dynamically from DB, fallback to .env via config()
+            $this->baseUrl = $attrs['resource_base_url'] ?? config('services.tata_aig.base_url', '');
+            $this->apiKey = $attrs['api_key'] ?? config('services.tata_aig.api_key', '');
+            $this->productCode = $attrs['product_code'] ?? config('services.tata_aig.product_code', '');
+        } else {
+            // 3. Complete fallback — read everything from .env via config() (no hardcoded secrets!)
+            $this->insurerId = 1;
+            $this->clientId = (string) config('services.tata_aig.client_id', '');
+            $this->clientSecret = (string) config('services.tata_aig.client_secret', '');
+            $this->tokenUrl = config('services.tata_aig.base_url', '') . '/access-gateway/oauth2/token';
+            $this->scope = 'https://api.iorta.in/write';
+            $this->timeout = 15;
+            $this->baseUrl = (string) config('services.tata_aig.base_url', '');
+            $this->apiKey = (string) config('services.tata_aig.api_key', '');
+            $this->productCode = (string) config('services.tata_aig.product_code', '');
+            $this->cacheKey = 'insurer:1:oauth2:access_token';
+            $this->expiryBufferSeconds = 60;
         }
     }
 

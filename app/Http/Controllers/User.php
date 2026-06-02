@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Insurance\Insurer;
 use App\Utils\Response as Response;
 use Illuminate\Http\Request;
 use App\Models\User as UserModel;
@@ -37,6 +38,8 @@ class User extends Controller
                 return Response::failed(sprintf('Your account is %s.', $user->status), 403, [], 403);
             }
 
+            $insurer = Insurer::where('user_id', $user->id)->first();
+
             return Response::success(
                 array(
                     'user_id' => $user->id,
@@ -44,7 +47,8 @@ class User extends Controller
                     'email' => $user->email,
                     'mobile' => $user->mobile,
                     'role' => $user->role,
-                    'status' => $user->status
+                    'status' => $user->status,
+                    'insurer' => $insurer
                 )
             );
         } catch (\Throwable $th) {
