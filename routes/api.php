@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\UserController as ApiUserController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [User::class, 'login']);
+Route::post('/google-login', [User::class, 'login']);
 
 Route::post('/users', [ApiUserController::class, 'store']);
 Route::match(['put', 'patch'], '/users/{user}', [ApiUserController::class, 'update']);

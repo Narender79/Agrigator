@@ -43,4 +43,8 @@ return [
         'product_code' => env('TATA_AIG_PRODUCT_CODE', '3187'),
     ],
 
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+    ],
+
 ];
