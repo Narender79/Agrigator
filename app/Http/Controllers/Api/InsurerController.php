@@ -72,4 +72,15 @@ class InsurerController extends Controller
             'updated_at' => $insurer->updated_at,
         ];
     }
+
+    public function showByUserId($userId)
+    {
+        $insurer = Insurer::query()->where('user_id', $userId)->first();
+
+        if (! $insurer) {
+            return Response::failed('Insurer not found.', 404, ['message' => 'Insurer not found.'], 404);
+        }
+
+        return Response::success($this->presentInsurer($insurer));
+    }
 }

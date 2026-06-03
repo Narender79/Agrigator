@@ -99,4 +99,21 @@ class PartnerController extends Controller
             'updated_at' => $partner->updated_at,
         ];
     }
+
+    public function showByUserId($userId)
+    {
+        $partner = Partner::query()->where('user_id', $userId)->first();
+
+        if (! $partner) {
+            return response()->json([
+                'code' => 'failed',
+                'message' => 'Partner not found.',
+            ], 404);
+        }
+
+        return response()->json([
+            'code' => 'success',
+            'data' => $this->presentPartner($partner),
+        ]);
+    }
 }

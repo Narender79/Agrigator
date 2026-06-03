@@ -52,4 +52,21 @@ class PartnerCredentialController extends Controller
             'updated_at' => $credential->updated_at,
         ];
     }
+
+    public function showByPartnerId($partnerId)
+    {
+        $credential = PartnerCredential::query()->where('partner_id', $partnerId)->first();
+
+        if (! $credential) {
+            return response()->json([
+                'code' => 'failed',
+                'message' => 'Partner credential not found.',
+            ], 404);
+        }
+
+        return response()->json([
+            'code' => 'success',
+            'data' => $this->presentCredential($credential),
+        ]);
+    }
 }
