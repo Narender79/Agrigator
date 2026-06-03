@@ -38,16 +38,15 @@ class VehicleMappingController extends Controller
     public function getModels(Request $request): JsonResponse
     {
         $makeCode = $request->query('make_code');
-        $makeName = $request->query('make_name');
 
-        if (!$makeCode && !$makeName) {
+        if (!$makeCode) {
             return response()->json([
                 'success' => false,
                 'message' => 'Please provide either make_code or make_name.'
             ], 400);
         }
 
-        $models = $this->mappingService->getFormattedModels($makeCode, $makeName);
+        $models = $this->mappingService->getFormattedModels($makeCode);
 
         return response()->json([
             'success' => true,
@@ -61,16 +60,15 @@ class VehicleMappingController extends Controller
     public function getTrims(Request $request): JsonResponse
     {
         $modelCode = $request->query('model_code');
-        $modelName = $request->query('model_name');
 
-        if (!$modelCode && !$modelName) {
+        if (!$modelCode) {
             return response()->json([
                 'success' => false,
                 'message' => 'Please provide either model_code or model_name.'
             ], 400);
         }
 
-        $trims = $this->mappingService->getFormattedTrims($modelCode, $modelName);
+        $trims = $this->mappingService->getFormattedTrims($modelCode);
 
         return response()->json([
             'success' => true,

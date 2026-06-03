@@ -46,5 +46,11 @@ return [
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
     ],
+    'gemini' => [
+        'api_key'              => env('GEMINI_API_KEY', ''),
+        'model'                => env('GEMINI_MODEL', 'gemini-2.0-flash'),
+        'confidence_threshold' => (int) env('GEMINI_CONFIDENCE_THRESHOLD', 80),
+        'batch_size'           => (int) env('GEMINI_BATCH_SIZE', 50),
+    ],
 
 ];

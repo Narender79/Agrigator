@@ -1,7 +1,7 @@
 <?php
 
 use Pdo\Mysql;
-
+use Illuminate\Support\Str;
 $redisHosts = json_decode((string) env('REDIS_HOSTS', '[]'), true);
 $redisPrimaryHost = is_array($redisHosts) && ! empty($redisHosts[0]) && is_array($redisHosts[0]) ? $redisHosts[0] : [];
 
@@ -123,6 +123,13 @@ return [
             // 'encrypt' => env('DB_ENCRYPT', 'yes'),
             // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
         ],
+        'mongodb' => [
+            'host'     => env('MONGODB_HOST', '127.0.0.1'),
+            'port'     => env('MONGODB_PORT', 27017),
+            'database' => env('MONGODB_DATABASE', 'drm_insurance'),
+            'username' => env('MONGODB_USERNAME', ''),
+            'password' => env('MONGODB_PASSWORD', ''),
+        ],
 
     ],
 
@@ -159,7 +166,9 @@ return [
 
         'options' => [
             'cluster' => env('REDIS_CLUSTER', 'redis'),
+
             'prefix' => env('REDIS_PREFIX', ''),
+            'prefix' => env('REDIS_PREFIX', Str::slug((string) env('APP_NAME', 'laravel')) . '-database-'),
             'persistent' => env('REDIS_PERSISTENT', false),
         ],
 

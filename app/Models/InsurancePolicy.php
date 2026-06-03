@@ -18,11 +18,4 @@ class InsurancePolicy extends Model
         'policy_type',
         'status',
     ];
-    /**
-     * Get the Insurer who offers this policy.
-     */
-    public function insurer()
-    {
-        return $this->belongsTo(Insurer::class, 'insurance_company_id');
-    }
 }
