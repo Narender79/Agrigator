@@ -3,11 +3,11 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use App\Repositories\Contracts\VehicleMappingRepositoryInterface;
-use App\Repositories\Eloquent\VehicleMappingRepository;
-use App\Repositories\Contracts\QuoteRepositoryInterface;
-use App\Repositories\Eloquent\QuoteRepository;
-use App\Services\Contracts\QuoteServiceInterface;
+use App\Repositories\Interfaces\VehicleMappingRepositoryInterface;
+use App\Repositories\VehicleMappingRepository;
+use App\Repositories\Interfaces\QuoteRepositoryInterface;
+use App\Repositories\QuoteRepository;
+use App\Services\Interfaces\QuoteServiceInterface;
 use App\Services\QuoteService;
 
 class AppServiceProvider extends ServiceProvider

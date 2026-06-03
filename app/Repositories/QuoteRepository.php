@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Repositories\Eloquent;
+namespace App\Repositories;
 
 use App\Repositories\Interfaces\QuoteRepositoryInterface;
 use MongoDB\Driver\Manager;
