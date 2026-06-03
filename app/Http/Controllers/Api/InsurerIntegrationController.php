@@ -94,4 +94,21 @@ class InsurerIntegrationController extends Controller
             'updated_at' => $integration->updated_at,
         ];
     }
+
+    public function showByInsurerId($insurerId)
+    {
+        $integration = InsurerIntegration::query()->where('insurer_id', $insurerId)->first();
+
+        if (! $integration) {
+            return response()->json([
+                'code' => 'failed',
+                'message' => 'Insurer integration not found.',
+            ], 404);
+        }
+
+        return response()->json([
+            'code' => 'success',
+            'data' => $this->presentIntegration($integration),
+        ]);
+    }
 }

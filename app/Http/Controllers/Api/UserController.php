@@ -125,4 +125,39 @@ class UserController extends Controller
             ],
         ]);
     }
+
+    public function show($user)
+    {
+        $user = User::query()->find($user);
+        if (! $user) {
+            return response()->json([
+                'code' => 'failed',
+                'message' => 'User not found.',
+            ], 404);
+        }
+
+        return response()->json([
+            'code' => 'success',
+            'data' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'mobile' => $user->mobile,
+                'role' => $user->role,
+                'status' => $user->status,
+                'device_id' => $user->device_id,
+                'device_type' => $user->device_type,
+                'os_name' => $user->os_name,
+                'app_version' => $user->app_version,
+                'ip_address' => $user->ip_address,
+                'lat' => $user->lat,
+                'long' => $user->long,
+                'browser_name' => $user->browser_name,
+                'created_by' => $user->created_by,
+                'updated_by' => $user->updated_by,
+                'created_at' => $user->created_at,
+                'updated_at' => $user->updated_at,
+            ],
+        ]);
+    }
 }
