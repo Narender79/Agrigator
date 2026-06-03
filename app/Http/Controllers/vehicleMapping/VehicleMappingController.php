@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Services\VehicleMappingService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
+use Exception;
 
 class VehicleMappingController extends Controller
 {
@@ -24,55 +26,79 @@ class VehicleMappingController extends Controller
      */
     public function getMakes(): JsonResponse
     {
-        $makes = $this->mappingService->getFormattedMakes();
+        try {
+            $makes = $this->mappingService->getFormattedMakes();
 
-        return response()->json([
-            'success' => true,
-            'data'    => $makes
-        ]);
+            return response()->json([
+                'success' => true,
+                'data'    => $makes
+            ]);
+        } catch (Exception $e) {
+            Log::error('Failed to fetch makes: ' . $e->getMessage(), ['exception' => $e]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch vehicle makes.'
+            ], 500);
+        }
     }
 
     /**
-     * GET /api/insurance/tata-aig/models?make_code=934&make_name=YEZDI
+     * GET /api/insurance/tata-aig/models?make_code=xxx
      */
     public function getModels(Request $request): JsonResponse
     {
-        $makeCode = $request->query('make_code');
+        try {
+            $makeCode = $request->query('make_code');
 
-        if (!$makeCode) {
+            if (!$makeCode) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Please provide either make_code or make_name.'
+                ], 400);
+            }
+
+            $models = $this->mappingService->getFormattedModels($makeCode);
+
+            return response()->json([
+                'success' => true,
+                'data'    => $models
+            ]);
+        } catch (Exception $e) {
+            Log::error('Failed to fetch models: ' . $e->getMessage(), ['exception' => $e]);
             return response()->json([
                 'success' => false,
-                'message' => 'Please provide either make_code or make_name.'
-            ], 400);
+                'message' => 'Failed to fetch vehicle models.'
+            ], 500);
         }
-
-        $models = $this->mappingService->getFormattedModels($makeCode);
-
-        return response()->json([
-            'success' => true,
-            'data'    => $models
-        ]);
     }
 
     /**
-     * GET /api/insurance/tata-aig/trims?model_code=16310&model_name=ROADSTER
+     * GET /api/insurance/tata-aig/trims?model_code=xxxxxx&model_name=xxxx
      */
     public function getTrims(Request $request): JsonResponse
     {
-        $modelCode = $request->query('model_code');
+        try {
+            $modelCode = $request->query('model_code');
 
-        if (!$modelCode) {
+            if (!$modelCode) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Please provide either model_code or model_name.'
+                ], 400);
+            }
+
+            $trims = $this->mappingService->getFormattedTrims($modelCode);
+
+            return response()->json([
+                'success' => true,
+                'data'    => $trims
+            ]);
+        } catch (Exception $e) {
+            Log::error('Failed to fetch trims: ' . $e->getMessage(), ['exception' => $e]);
             return response()->json([
                 'success' => false,
-                'message' => 'Please provide either model_code or model_name.'
-            ], 400);
+                'message' => 'Failed to fetch vehicle trims.'
+            ], 500);
         }
-
-        $trims = $this->mappingService->getFormattedTrims($modelCode);
-
-        return response()->json([
-            'success' => true,
-            'data'    => $trims
-        ]);
     }
 }
