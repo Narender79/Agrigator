@@ -59,6 +59,17 @@ class InsurerIntegrationController extends Controller
         ]);
     }
 
+    public function accessToken(InsurerIntegration $insurerIntegration)
+    {
+        return response()->json([
+            'message' => 'Insurer access token resolved successfully.',
+            'data' => [
+                'insurer_id' => $insurerIntegration->insurer_id,
+                'access_token' => $this->resolveInsurerAccessTokenFromIntegration($insurerIntegration),
+            ],
+        ]);
+    }
+
     protected function encryptIfPresent(?string $value): ?string
     {
         if ($value === null || $value === '') {

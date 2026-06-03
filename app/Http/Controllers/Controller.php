@@ -24,6 +24,13 @@ abstract class Controller
             throw new RuntimeException(sprintf('Insurer integration not found for insurer ID %d.', $insurerId));
         }
 
+        return $this->resolveInsurerAccessTokenFromIntegration($integration);
+    }
+
+    protected function resolveInsurerAccessTokenFromIntegration(InsurerIntegration $integration): string
+    {
+        $insurerId = $integration->insurer_id;
+
         return match ($integration->auth_type) {
             'OAUTH2' => $this->resolveOauth2InsurerAccessToken($integration),
             'BASIC_AUTH', 'API_KEY' => throw new RuntimeException(sprintf(

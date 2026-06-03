@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreInsurerRequest;
 use App\Http\Requests\Api\UpdateInsurerRequest;
 use App\Models\Insurance\Insurer;
+use App\Utils\Response;
 
 class InsurerController extends Controller
 {
@@ -23,10 +24,14 @@ class InsurerController extends Controller
             'updated_by' => $validated['updated_by'] ?? null,
         ]);
 
-        return response()->json([
-            'message' => 'Insurer created successfully.',
-            'data' => $this->presentInsurer($insurer->fresh()),
-        ], 201);
+
+        return Response::success(
+            $this->presentInsurer($insurer->fresh()),
+            array(
+                'message' => 'Insurer created successfully.'
+            ),
+            201
+        );
     }
 
     public function update(UpdateInsurerRequest $request, Insurer $insurer)
@@ -43,10 +48,13 @@ class InsurerController extends Controller
             'updated_by' => array_key_exists('updated_by', $validated) ? $validated['updated_by'] : $insurer->updated_by,
         ]);
 
-        return response()->json([
-            'message' => 'Insurer updated successfully.',
-            'data' => $this->presentInsurer($insurer->fresh()),
-        ]);
+        return Response::success(
+            $this->presentInsurer($insurer->fresh()),
+            array(
+                'message' => 'Insurer updated successfully.',
+                'validated'=>$request->all()
+            )
+        );
     }
 
     protected function presentInsurer(Insurer $insurer): array
