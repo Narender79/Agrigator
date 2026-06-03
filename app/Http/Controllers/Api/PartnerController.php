@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Partner;
+use App\Utils\Response;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -36,20 +37,17 @@ class PartnerController extends Controller
             'updated_by' => $validated['updated_by'] ?? null,
         ]);
 
-        return response()->json([
-            'message' => 'Partner created successfully.',
-            'data' => $this->presentPartner($partner->fresh()),
-        ], 201);
+        return Response::success($this->presentPartner($partner->fresh()), array(
+            'message' => 'Partner created successfully.'
+        ), 201);
     }
 
     public function update(Request $request, $partner)
     {
         $partner = Partner::query()->find($partner);
 
-        if (! $partner) {
-            return response()->json([
-                'message' => 'Partner not found.',
-            ], 404);
+        if (!$partner) {
+            return Response::failed('Partner not found.', 404);
         }
 
         $validated = Validator::make($request->all(), [
@@ -76,10 +74,9 @@ class PartnerController extends Controller
             'updated_by' => array_key_exists('updated_by', $validated) ? $validated['updated_by'] : $partner->updated_by,
         ]);
 
-        return response()->json([
-            'message' => 'Partner updated successfully.',
-            'data' => $this->presentPartner($partner->fresh()),
-        ]);
+        return Response::success($this->presentPartner($partner->fresh()), array(
+            'message' => 'Partner updated successfully.'
+        ), 201);
     }
 
     protected function presentPartner(Partner $partner): array
@@ -104,16 +101,10 @@ class PartnerController extends Controller
     {
         $partner = Partner::query()->where('user_id', $userId)->first();
 
-        if (! $partner) {
-            return response()->json([
-                'code' => 'failed',
-                'message' => 'Partner not found.',
-            ], 404);
+        if (!$partner) {
+            return Response::failed('Partner not found.', 404);
         }
 
-        return response()->json([
-            'code' => 'success',
-            'data' => $this->presentPartner($partner),
-        ]);
+        return Response::success($this->presentPartner($partner));
     }
 }

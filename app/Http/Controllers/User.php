@@ -43,8 +43,6 @@ class User extends Controller
                 return Response::failed(sprintf('Your account is %s.', $user->status), 403, [], 403);
             }
 
-            $insurer = Insurer::where('user_id', $user->id)->first();
-
             return Response::success(
                 array(
                     'user_id' => $user->id,
@@ -52,8 +50,7 @@ class User extends Controller
                     'email' => $user->email,
                     'mobile' => $user->mobile,
                     'role' => $user->role,
-                    'status' => $user->status,
-                    'insurer' => $insurer
+                    'status' => $user->status
                 )
             );
         } catch (\Throwable $th) {
@@ -85,17 +82,17 @@ class User extends Controller
             \Log::info('Received Google login request', ['id_token' => $request->id_token]);
             $googleUser = $this->verifyGoogleIdToken($request->id_token);
             \Log::info('Google token verification result', ['google_user' => $googleUser]);
-            if (! $googleUser) {
+            if (!$googleUser) {
                 return Response::failed('Invalid Google token.', 401);
             }
 
-            if (! filter_var((string) ($googleUser['email_verified'] ?? false), FILTER_VALIDATE_BOOLEAN)) {
+            if (!filter_var((string) ($googleUser['email_verified'] ?? false), FILTER_VALIDATE_BOOLEAN)) {
                 return Response::failed('Google account email is not verified.', 403, [], 403);
             }
 
             $user = UserModel::where('email', $googleUser['email'] ?? '')->first();
 
-            if (! $user) {
+            if (!$user) {
                 return Response::failed('User not found.', 404, [], 404);
             }
 
@@ -136,13 +133,13 @@ class User extends Controller
             'id_token' => $idToken,
         ]);
 
-        if (! $response->successful()) {
+        if (!$response->successful()) {
             return null;
         }
 
         $payload = $response->json();
 
-        if (! is_array($payload)) {
+        if (!is_array($payload)) {
             return null;
         }
 

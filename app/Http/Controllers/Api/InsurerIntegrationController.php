@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreInsurerIntegrationRequest;
 use App\Http\Requests\Api\UpdateInsurerIntegrationRequest;
 use App\Models\Insurance\InsurerIntegration;
+use App\Utils\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Crypt;
 
@@ -28,10 +29,13 @@ class InsurerIntegrationController extends Controller
             'updated_by' => $validated['updated_by'] ?? null,
         ]);
 
-        return response()->json([
-            'message' => 'Insurer integration created successfully.',
-            'data' => $this->presentIntegration($integration->fresh()),
-        ], 201);
+        return Response::success(
+            $this->presentIntegration($integration->fresh()),
+            array(
+                'message' => 'Insurer integration created successfully.'
+            ),
+            201
+        );
     }
 
     public function update(UpdateInsurerIntegrationRequest $request, InsurerIntegration $insurerIntegration)
@@ -53,21 +57,25 @@ class InsurerIntegrationController extends Controller
             'updated_by' => array_key_exists('updated_by', $validated) ? $validated['updated_by'] : $insurerIntegration->updated_by,
         ]);
 
-        return response()->json([
-            'message' => 'Insurer integration updated successfully.',
-            'data' => $this->presentIntegration($insurerIntegration->fresh()),
-        ]);
+        return Response::success(
+            $this->presentIntegration($insurerIntegration->fresh()),
+            array(
+                'message' => 'Insurer integration updated successfully.'
+            )
+        );
     }
 
     public function accessToken(InsurerIntegration $insurerIntegration)
     {
-        return response()->json([
-            'message' => 'Insurer access token resolved successfully.',
-            'data' => [
+        return Response::success(
+            [
                 'insurer_id' => $insurerIntegration->insurer_id,
                 'access_token' => $this->resolveInsurerAccessTokenFromIntegration($insurerIntegration),
             ],
-        ]);
+            array(
+                'message' => 'Insurer access token resolved successfully.'
+            )
+        );
     }
 
     protected function encryptIfPresent(?string $value): ?string
@@ -99,16 +107,10 @@ class InsurerIntegrationController extends Controller
     {
         $integration = InsurerIntegration::query()->where('insurer_id', $insurerId)->first();
 
-        if (! $integration) {
-            return response()->json([
-                'code' => 'failed',
-                'message' => 'Insurer integration not found.',
-            ], 404);
+        if (!$integration) {
+            return Response::failed('Insurer integration updated successfully.', 404);
         }
 
-        return response()->json([
-            'code' => 'success',
-            'data' => $this->presentIntegration($integration),
-        ]);
+        return Response::success($this->presentIntegration($integration));
     }
 }
