@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\InsurerController;
 use App\Http\Controllers\Api\InsurerIntegrationController;
 use App\Http\Controllers\Api\PartnerCredentialController;
+use App\Http\Controllers\Api\RTO;
 use App\Http\Controllers\User;
 use App\Http\Controllers\Api\UserController as ApiUserController;
 use Illuminate\Support\Facades\Route;
@@ -43,3 +44,5 @@ Route::middleware('merchant.api')->group(function () {
 Route::post('/login', [User::class, 'login']);
 
 Route::post('/insurance/quotes', [QuoteController::class, 'store']);
+
+Route::get('/rto', [RTO::class, 'getRtoData']);

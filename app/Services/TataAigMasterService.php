@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Models\Insurance\InsurerIntegration;
 use Illuminate\Support\Facades\Crypt;
+use GuzzleHttp\Client;
 
 class TataAigMasterService
 {
@@ -80,16 +81,16 @@ class TataAigMasterService
         $response = Http::asForm()
             ->timeout($this->timeout)
             ->post($this->tokenUrl, [
-                'grant_type'    => 'client_credentials',
-                'scope'         => $this->scope,
-                'client_id'     => $this->clientId,
+                'grant_type' => 'client_credentials',
+                'scope' => $this->scope,
+                'client_id' => $this->clientId,
                 'client_secret' => $this->clientSecret,
             ]);
         if ($response->failed()) {
             Log::error('Tata AIG DB-backed auth failed', [
-                'url'    => $this->tokenUrl,
+                'url' => $this->tokenUrl,
                 'status' => $response->status(),
-                'body'   => $response->body()
+                'body' => $response->body()
             ]);
         }
         $data = $response->json();
@@ -115,24 +116,24 @@ class TataAigMasterService
         $payload = $this->sanitizePayload($payload);
         $response = Http::withHeaders([
             'Authorization' => 'Bearer ' . $token,
-            'x-api-key'     => $this->apiKey,
-            'Content-Type'  => 'application/json'
+            'x-api-key' => $this->apiKey,
+            'Content-Type' => 'application/json'
         ])->timeout($this->timeout)->post($url, $payload);
         if ($response->failed()) {
             Log::error('Tata AIG Quote API Failure', [
                 'status' => $response->status(),
-                'body'   => $response->body()
+                'body' => $response->body()
             ]);
 
             return [
                 'success' => false,
                 'message' => 'Failed to retrieve quote from Tata AIG.',
-                'errors'  => $response->json()
+                'errors' => $response->json()
             ];
         }
         return [
             'success' => true,
-            'data'    => $response->json()
+            'data' => $response->json()
         ];
     }
 
@@ -149,5 +150,27 @@ class TataAigMasterService
             }
         }
         return $payload;
+    }
+
+    public function fetchRto($rtoCode = '', $rtoCity = '')
+    {
+        try {
+            $rtoUrl = '/motor-master/v1/pcimportmaster/get_pcdropdowns/rto/' . $rtoCode . '/' . $rtoCity;
+
+            $client = new Client(array(
+                'base_uri' => rtrim($this->baseUrl, '/'),
+                'timeout' => $this->timeout ?? 30
+            ));
+
+            return $client->get($rtoUrl, [
+                'headers' => array(
+                    'Authorization' => 'Bearer ' . $this->getAccessToken(),
+                    'x-api-key' => $this->apiKey,
+                    'Content-Type' => 'application/json'
+                ),
+            ]);
+        } catch (\Throwable $th) {
+            return array('code' => 'failed', 'message' => $th->getMessage() ?? 'Something went wrong');
+        }
     }
 }
