@@ -47,4 +47,14 @@ return [
         'client_id' => env('GOOGLE_CLIENT_ID'),
     ],
 
+    'droom' => [
+        'gateway_url' => env('GATEWAY_URL', 'https://apig.droom.in'),
+        'genai_base_url' => env('DROOM_GENAI_BASE_URL', 'https://genaisuper.droom.in'),
+        'genai_auth_token' => env('DROOM_GENAI_AUTH_TOKEN'),
+        'oauth_client_id' => env('OAUTH_CLIENT_ID'),
+        'oauth_client_secret' => env('OAUTH_CLIENT_SECRET'),
+        'oauth_username' => env('OAUTH_USERNAME'),
+        'oauth_password' => env('OAUTH_PASSWORD'),
+    ],
+
 ];
