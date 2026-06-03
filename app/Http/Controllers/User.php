@@ -82,9 +82,7 @@ class User extends Controller
             if ($validator->fails()) {
                 return Response::validationFailed($validator->errors());
             }
-            \Log::info('Received Google login request', ['id_token' => $request->id_token]);
             $googleUser = $this->verifyGoogleIdToken($request->id_token);
-            \Log::info('Google token verification result', ['google_user' => $googleUser]);
             if (! $googleUser) {
                 return Response::failed('Invalid Google token.', 401);
             }
