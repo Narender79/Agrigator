@@ -25,7 +25,7 @@ class TataAigMasterService
     public function __construct()
     {
         $currentEnv = config('app.env', 'uat');
-        
+
         // 1. Try to find the record matching the current environment
         $integration = InsurerIntegration::where('insurer_id', 1)
             ->where('environment', $currentEnv)
@@ -41,7 +41,7 @@ class TataAigMasterService
             // Decrypt standard database columns
             $this->clientId = Crypt::decryptString($integration->client_id);
             $this->clientSecret = Crypt::decryptString($integration->client_secret);
-            
+
             // Read custom values from dynamic JSON attributes
             $attrs = $integration->other_attributes ?? [];
             $this->tokenUrl = $attrs['token_url'] ?? $integration->api_base_url;
@@ -100,62 +100,54 @@ class TataAigMasterService
         return $this->accessToken;
     }
 
+    /**
+     * Send quote request to Tata AIG Quote API.
+     *
+     * @param array $payload
+     * @return array
+     */
 
-    public function fetchMakes(): array
+    public function fetchQuote(array $payload)
     {
         $token = $this->getAccessToken();
-        $url = rtrim($this->baseUrl, '/') . "/motor-master/v1/tw-api/make/{$this->productCode}";
+
+        $url = rtrim($this->baseUrl, '/') . '/motor/v1/quote';
+        $payload = $this->sanitizePayload($payload);
         $response = Http::withHeaders([
             'Authorization' => 'Bearer ' . $token,
-            'x-api-key' => $this->apiKey,
-        ])->get($url);
-
+            'x-api-key'     => $this->apiKey,
+            'Content-Type'  => 'application/json'
+        ])->timeout($this->timeout)->post($url, $payload);
         if ($response->failed()) {
-            Log::error("Failed fetching make from Tata AIG", ['body' => $response->body()]);
-            return [];
+            Log::error('Tata AIG Quote API Failure', [
+                'status' => $response->status(),
+                'body'   => $response->body()
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Failed to retrieve quote from Tata AIG.',
+                'errors'  => $response->json()
+            ];
         }
-        return $response->json('data') ?? [];
+        return [
+            'success' => true,
+            'data'    => $response->json()
+        ];
     }
 
-    public function fetchModels(string $makeCode, string $makeName): array
+    /**
+     * Recursively convert any null values to empty strings to bypass Laravel's empty-string-to-null middleware.
+     */
+    private function sanitizePayload(array $payload): array
     {
-        $token = $this->getAccessToken();
-
-        $encodedMakeName = rawurlencode($makeName);
-
-        $url = rtrim($this->baseUrl, '/') . "/motor-master/v1/tw-api/model/{$makeCode}/{$encodedMakeName}/{$this->productCode}";
-
-        $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $token,
-            'x-api-key' => $this->apiKey,
-        ])->get($url);
-
-        if ($response->failed()) {
-            Log::error("Failed fetching models for make {$makeName} ({$makeCode}) from Tata AIG", ['body' => $response->body()]);
-            return [];
+        foreach ($payload as $key => $value) {
+            if ($value === null) {
+                $payload[$key] = '';
+            } elseif (is_array($value)) {
+                $payload[$key] = $this->sanitizePayload($value);
+            }
         }
-
-        return $response->json('data') ?? [];
-    }
-
-    public function fetchVariants(string $modelCode, string $modelName): array
-    {
-        $token = $this->getAccessToken();
-
-        $encodedModelName = rawurlencode($modelName);
-
-        $url = rtrim($this->baseUrl, '/') . "/motor-master/v1/tw-api/variant/{$modelCode}/{$encodedModelName}/{$this->productCode}";
-
-        $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $token,
-            'x-api-key' => $this->apiKey,
-        ])->get($url);
-
-        if ($response->failed()) {
-            Log::error("Failed fetching variants for model {$modelName} ({$modelCode}) from Tata AIG", ['body' => $response->body()]);
-            return [];
-        }
-
-        return $response->json('data') ?? [];
+        return $payload;
     }
 }

@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\PartnerCredentialController;
 use App\Http\Controllers\User;
 use App\Http\Controllers\Api\UserController as ApiUserController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\QuoteController;
+use App\Http\Controllers\vehicleMapping\VehicleMappingController;
 
 Route::post('/login', [User::class, 'login']);
 Route::post('/google-login', [User::class, 'login']);
@@ -21,7 +23,15 @@ Route::post('/insurers', [InsurerController::class, 'store']);
 Route::match(['put', 'patch'], '/insurers/{insurer}', [InsurerController::class, 'update']);
 Route::post('/insurer-integrations', [InsurerIntegrationController::class, 'store']);
 Route::match(['put', 'patch'], '/insurer-integrations/{insurerIntegration}', [InsurerIntegrationController::class, 'update']);
+
 Route::get('/insurer-integrations/{insurerIntegration}/access-token', [InsurerIntegrationController::class, 'accessToken']);
 Route::middleware('merchant.api')->group(function () {
-	
+    Route::post('/insurance/quotes', [QuoteController::class, 'store']);
+    Route::get('/insurance/makes', [VehicleMappingController::class, 'getMakes']);
+    Route::get('/insurance/models', [VehicleMappingController::class, 'getModels']);
+    Route::get('/insurance/trims', [VehicleMappingController::class, 'getTrims']);
 });
+
+Route::post('/login', [User::class, 'login']);
+
+Route::post('/insurance/quotes', [QuoteController::class, 'store']);
