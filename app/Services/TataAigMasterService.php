@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Log;
 use App\Models\Insurance\InsurerIntegration;
 use Exception;
 use Illuminate\Support\Facades\Crypt;
+use GuzzleHttp\Client;
 
 class TataAigMasterService
 {
@@ -155,5 +156,27 @@ class TataAigMasterService
             }
         }
         return $payload;
+    }
+
+    public function fetchRto($rtoCode = '', $rtoCity = '')
+    {
+        try {
+            $rtoUrl = '/motor-master/v1/pcimportmaster/get_pcdropdowns/rto/' . $rtoCode . '/' . $rtoCity;
+
+            $client = new Client(array(
+                'base_uri' => rtrim($this->baseUrl, '/'),
+                'timeout' => $this->timeout ?? 30
+            ));
+
+            return $client->get($rtoUrl, [
+                'headers' => array(
+                    'Authorization' => 'Bearer ' . $this->getAccessToken(),
+                    'x-api-key' => $this->apiKey,
+                    'Content-Type' => 'application/json'
+                ),
+            ]);
+        } catch (\Throwable $th) {
+            return array('code' => 'failed', 'message' => $th->getMessage() ?? 'Something went wrong');
+        }
     }
 }
