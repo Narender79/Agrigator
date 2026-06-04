@@ -4,10 +4,10 @@ namespace App\Models\Insurance;
 
 use MongoDB\Laravel\Eloquent\Model;
 
-class InsuranceQuoteMongo extends Model
+class QuoteReqRes extends Model
 {
     protected $connection = 'mongodb';
-    protected $collection = 'insurance_quotes';
+    protected $table = 'insurance_quotes';
 
     protected $fillable = [
         'insurer_id',
@@ -24,8 +24,6 @@ class InsuranceQuoteMongo extends Model
     ];
 
     protected $casts = [
-        'request_payload' => 'array',
-        'insurer_response_payload' => 'array',
         'price_offered' => 'float',
         'insurer_id' => 'integer',
         'man_year' => 'integer',

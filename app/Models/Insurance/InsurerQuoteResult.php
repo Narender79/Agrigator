@@ -7,7 +7,7 @@ use MongoDB\Laravel\Eloquent\Model;
 class InsurerQuoteResult extends Model
 {
     protected $connection = 'mongodb';
-    protected $collection = 'insurer_quote_results';
+    protected $table = 'insurer_quote_results';
 
     protected $fillable = [
         'session_id',
@@ -24,9 +24,6 @@ class InsurerQuoteResult extends Model
     ];
 
     protected $casts = [
-        'coverage_details' => 'array',
-        'request_payload'  => 'array',
-        'raw_response'     => 'array',
         'premium_amount'   => 'float',
         'idv'              => 'float',
         'response_ms'      => 'integer',

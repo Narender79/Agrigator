@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Insurance\Insurer;
 use App\Services\Interfaces\QuoteServiceInterface;
 use App\Repositories\Interfaces\QuoteRepositoryInterface;
+use \App\Models\Insurance\QuoteRequest;
 use App\Services\TataAigMasterService;
 use App\Models\MakeMapping;
 use App\Models\ModelMapping;
@@ -71,6 +72,24 @@ class QuoteService implements QuoteServiceInterface
                     'message' => 'The selected vehicle details are not mapped for this insurer.'
                 ];
             }
+
+            // Generate or capture quote request session ID
+            $sessionId = $payload['session_id'] ?? (string) \Illuminate\Support\Str::uuid();
+            // Store the quote request session in SQL
+            QuoteRequest::firstOrCreate(
+                ['session_id' => $sessionId],
+                [
+                    'vehicle_data' => [
+                        'make_id'  => $payload['make_id'],
+                        'model_id' => $payload['model_id'],
+                        'trim_id'  => $payload['trim_id'],
+                        'man_year' => $payload['man_year'] ?? null,
+                    ],
+                    'status' => 'complete',
+                    'insurer_count' => 1,
+                    'expires_at' => now()->addDays(7),
+                ]
+            );
 
             // 3. Inject carrier-specific nomenclature and codes into the payload
             $payload['vehicle_make']       = $makeMapp->insurer_make_name;
