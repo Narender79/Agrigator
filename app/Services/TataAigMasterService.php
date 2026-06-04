@@ -39,8 +39,8 @@ class TataAigMasterService
                 throw new \RuntimeException("Tata AIG integration record not found in database.");
             }
             $this->insurerId = $integration->insurer_id;
-            $this->clientId = Crypt::decryptString($integration->client_id);
-            $this->clientSecret = Crypt::decryptString($integration->client_secret);
+            $this->clientId = Crypt::decryptString(Crypt::decryptString($integration->client_id));
+            $this->clientSecret = Crypt::decryptString(Crypt::decryptString($integration->client_secret));
             $this->baseUrl = $integration->api_base_url;
             $attrs = $integration->other_attributes ?? [];
             if (empty($attrs)) {
@@ -54,9 +54,9 @@ class TataAigMasterService
             $this->apiKey = (string) config('services.tata_aig.api_key', '');
             $this->productCode = $attrs['product_code'] ?? config('services.tata_aig.product_code', '3187');
         } catch (\Exception $e) {
-            Log::error('Tata AIG configuration load failed: ' . $e->getMessage(), [
-                'exception' => $e
-            ]);
+            // Log::error('Tata AIG configuration load failed: ' . $e->getMessage(), [
+            //     'exception' => $e
+            // ]);
             throw $e;
         }
     }
@@ -94,7 +94,7 @@ class TataAigMasterService
 
             return $this->accessToken;
         } catch (Exception $e) {
-            Log::error('Tata AIG access token retrieval failed: ' . $e->getMessage(), ['exception' => $e]);
+            // Log::error('Tata AIG access token retrieval failed: ' . $e->getMessage(), ['exception' => $e]);
             throw $e;
         }
     }
@@ -135,7 +135,7 @@ class TataAigMasterService
                 'data'    => $response->json()
             ];
         } catch (Exception $e) {
-            Log::error('Tata AIG fetchQuote exception: ' . $e->getMessage(), ['exception' => $e]);
+            // Log::error('Tata AIG fetchQuote exception: ' . $e->getMessage(), ['exception' => $e]);
             return [
                 'success' => false,
                 'message' => 'An error occurred while fetching quote: ' . $e->getMessage()

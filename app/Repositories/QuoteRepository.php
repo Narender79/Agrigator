@@ -3,58 +3,73 @@
 namespace App\Repositories;
 
 use App\Repositories\Interfaces\QuoteRepositoryInterface;
-use MongoDB\Driver\Manager;
-use MongoDB\Driver\BulkWrite;
-use MongoDB\BSON\ObjectId;
-use MongoDB\BSON\UTCDateTime;
+use App\Models\Insurance\InsuranceQuoteMongo;
+use App\Models\Insurance\InsurerQuoteResult;
+use Illuminate\Support\Facades\Log;
+use Exception;
 
 class QuoteRepository implements QuoteRepositoryInterface
 {
-    private Manager $manager;
-    private string $database;
-
-    public function __construct()
-    {
-        $host = config('database.connections.mongodb.host', env('MONGODB_HOST', '127.0.0.1'));
-        $port = (int) config('database.connections.mongodb.port', env('MONGODB_PORT', 27018));
-        $username = config('database.connections.mongodb.username', env('MONGODB_USERNAME', ''));
-        $password = config('database.connections.mongodb.password', env('MONGODB_PASSWORD', ''));
-        $this->database = config('database.connections.mongodb.database', env('MONGODB_DATABASE', 'drm_insurance'));
-        // Build the authenticated connection URI pointing to the admin auth database
-        $uri = sprintf(
-            'mongodb://%s:%s@%s:%d/admin',
-            rawurlencode($username),
-            rawurlencode($password),
-            $host,
-            $port
-        );
-        $this->manager = new Manager($uri);
-    }
-
+    /**
+     * Store a new quote request/response locally inside MongoDB.
+     *
+     * @param array $data
+     * @return string The generated MongoDB ObjectId string
+     */
     public function saveQuote(array $data): string
     {
-        $bulk = new BulkWrite();
-        $objectId = new ObjectId();
+        try {
+            $quote = InsuranceQuoteMongo::create([
+                'insurer_id'               => $data['insurer_id'] ?? null,
+                'proposer_type'            => $data['proposer_type'] ?? null,
+                'proposer_pincode'         => $data['proposer_pincode'] ?? null,
+                'vehicle_make'             => $data['vehicle_make'] ?? null,
+                'vehicle_model'            => $data['vehicle_model'] ?? null,
+                'vehicle_variant'          => $data['vehicle_variant'] ?? null,
+                'man_year'                 => $data['man_year'] ?? null,
+                'price_offered'            => $data['price_offered'] ?? 0,
+                'status'                   => $data['status'] ?? 'failed',
+                'request_payload'          => $data['request_payload'] ?? [],
+                'insurer_response_payload' => $data['insurer_response_payload'] ?? [],
+            ]);
 
-        $document = [
-            '_id'                      => $objectId,
-            'insurer_id'               => $data['insurer_id'] ?? null,
-            'proposer_type'            => $data['proposer_type'] ?? null,
-            'proposer_pincode'         => $data['proposer_pincode'] ?? null,
-            'vehicle_make'             => $data['vehicle_make'] ?? null,
-            'vehicle_model'            => $data['vehicle_model'] ?? null,
-            'vehicle_variant'          => $data['vehicle_variant'] ?? null,
-            'man_year'                 => $data['man_year'] ?? null,
-            'price_offered'            => $data['price_offered'] ?? 0,
-            'status'                   => $data['status'] ?? 'failed',
-            'request_payload'          => $data['request_payload'] ?? [], // Complete request payload
-            'insurer_response_payload' => $data['insurer_response_payload'] ?? [], // Complete response payload
-            'created_at'               => new UTCDateTime((int)(round(microtime(true) * 1000))),
-        ];
-        $bulk->insert($document);
+            return (string) $quote->_id;
+        } catch (Exception $e) {
+            // Log::error('Failed to save quote in MongoDB: ' . $e->getMessage(), [
+            //     'data' => $data,
+            //     'exception' => $e
+            // ]);
+            throw new \RuntimeException('Database logging error: ' . $e->getMessage());
+        }
+    }
 
-        // Execute the write operation on the target database and collection
-        $this->manager->executeBulkWrite("{$this->database}.insurance_quotes", $bulk);
-        return (string) $objectId;
+    /**
+     * Store the detailed insurer quote result inside MongoDB.
+     */
+    public function saveInsurerResult(array $data): string
+    {
+        try {
+            $result = InsurerQuoteResult::create([
+                'session_id'       => $data['session_id'],
+                'insurer_slug'     => $data['insurer_slug'],
+                'insurer_name'     => $data['insurer_name'] ?? null,
+                'status'           => $data['status'],
+                'premium_amount'   => $data['premium_amount'] ?? 0,
+                'idv'              => $data['idv'] ?? 0,
+                'coverage_details' => $data['coverage_details'] ?? [],
+                'request_payload'  => $data['request_payload'] ?? [],
+                'raw_response'     => $data['raw_response'] ?? [],
+                'error_message'    => $data['error_message'] ?? null,
+                'response_ms'      => $data['response_ms'] ?? 0,
+            ]);
+
+            return (string) $result->_id;
+        } catch (Exception $e) {
+            // Log::error('Failed to save insurer result in MongoDB: ' . $e->getMessage(), [
+            //     'data' => $data,
+            //     'exception' => $e
+            // ]);
+            throw new \RuntimeException('Database logging error: ' . $e->getMessage());
+        }
     }
 }

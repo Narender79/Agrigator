@@ -46,6 +46,4 @@ Route::middleware('merchant.api')->group(function () {
 
 Route::post('/login', [User::class, 'login']);
 
-Route::post('/insurance/quotes', [QuoteController::class, 'store']);
-
 Route::get('/rto', [RTO::class, 'getRtoData']);
