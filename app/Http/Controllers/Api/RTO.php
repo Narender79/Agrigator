@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Services\TataAigMasterService;
 use App\Utils\Response;
-use Illuminate\Http\Client\Request;
+use Illuminate\Http\Request;
 
 class RTO extends Controller
 {
@@ -18,7 +18,6 @@ class RTO extends Controller
             $rtoCity = $request->input('rto_city') ?? '';
 
             $response = (new TataAigMasterService)->fetchRto($rtoCode, $rtoCity);
-
 
             if (data_get($response, 'status', 0) == 200) {
                 return Response::success(data_get($response, 'data'));
