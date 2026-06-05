@@ -33,21 +33,16 @@ class QuoteService implements QuoteServiceInterface
         $this->trimMapping = $trimMapping;
     }
 
-    public function getInsurerQuote(string $insurerSlug, array $payload): array
+    public function getInsurerQuote(array $payload): array
     {
         try {
-            // 1. Resolve Insurer via Slug (mapping 'tata-aig' to the database name)
-            $companyName = match ($insurerSlug) {
-                'tata-aig' => 'TATA AIG GENERAL INSURANCE',
-                default => null
-            };
-
-            $insurer = $this->insurer->where('company_name', $companyName)->first();
+            // 1. Resolve Insurer 
+            $insurer = $this->insurer->where('company_name', 'TATA AIG GENERAL INSURANCE')->first();
 
             if (!$insurer || $insurer->status !== 'active') {
                 return [
                     'success' => false,
-                    'message' => 'Specified insurer is not active or available.'
+                    'message' => 'Insurer is not active or available.'
                 ];
             }
 

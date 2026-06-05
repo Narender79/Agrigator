@@ -4,5 +4,5 @@ namespace App\Services\Interfaces;
 
 interface QuoteServiceInterface
 {
-    public function getInsurerQuote(string $insurerSlug, array $payload): array;
+    public function getInsurerQuote(array $payload): array;
 }
