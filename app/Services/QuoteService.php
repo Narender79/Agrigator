@@ -98,12 +98,32 @@ class QuoteService implements QuoteServiceInterface
             $payload['vehicle_model_no']   = (int) $modelMapp->insurer_model_id;
             $payload['vehicle_variant']    = $trimMapp->insurer_trim_name;
             $payload['vehicle_variant_no'] = (string) $trimMapp->insurer_trim_id;
+            // Dynamically merge defaults when __finalize is '0' using null-coalescing
+            $payload['__finalize'] = $payload['__finalize'] ?? '0';
+            $payload['cng_lpg_cover']                 = $payload['cng_lpg_cover'] ?? 'NO';
+            $payload['automobile_association_cover']  = $payload['automobile_association_cover'] ?? 'No';
+            $payload['antitheft_cover']               = $payload['antitheft_cover'] ?? 'No';
+            $payload['tppd_discount']                 = $payload['tppd_discount'] ?? 'No';
+            $payload['vehicle_blind']                 = $payload['vehicle_blind'] ?? 'No';
+            $payload['vintage_car']                   = $payload['vintage_car'] ?? 'No';
+            $payload['own_premises']                  = $payload['own_premises'] ?? 'No';
+            $payload['ncb_protection']                = $payload['ncb_protection'] ?? 'No';
+            $payload['add_towing']                    = $payload['add_towing'] ?? 'No';
+            $payload['pa_owner_declaration']          = $payload['pa_owner_declaration'] ?? 'None';
+            $payload['pa_unnamed']                    = $payload['pa_unnamed'] ?? 'No';
+            $payload['pa_named']                      = $payload['pa_named'] ?? '';
+            $payload['pa_paid']                       = $payload['pa_paid'] ?? 'No';
+            $payload['load_fibre']                    = $payload['load_fibre'] ?? 'No';
+            $payload['load_imported']                 = $payload['load_imported'] ?? 'No';
+            $payload['load_tuition']                  = $payload['load_tuition'] ?? 'No';
+
 
             // Remove Droom-specific IDs before sending to Tata AIG
             unset($payload['make_id'], $payload['model_id'], $payload['trim_id']);
             // \Log::info($payload);
             // 4. Call Tata AIG Master Service directly
             $result = $this->tataAigService->fetchQuote($payload);
+            // \Log::info($result);
 
             // 5. Log the quote request & response inside your local database via the Repository
             $price = $result['success'] ? ($result['data']['premium_details']['total_premium'] ?? 0) : 0;
@@ -121,6 +141,14 @@ class QuoteService implements QuoteServiceInterface
                 'insurer_response_payload' => $result,
                 'status'                   => $result['success'] ? 'success' : 'failed',
             ]);
+
+            // Check the category_id from the model mapping to determine 4w vs 2w dynamically
+            $vehicleType = ($modelMapp && $makeMapp->category_id == 81) ? '4w' : '2w';
+            $result['available_options'] = [
+                'policy_plans' => config("insurance_masters.policy_plans.{$vehicleType}", []),
+                'motor_plans'  => config("insurance_masters.motor_plans.{$vehicleType}", []),
+                'add_ons'      => config("insurance_masters.add_ons.{$vehicleType}", []),
+            ];
 
             return $result;
         } catch (Exception $e) {

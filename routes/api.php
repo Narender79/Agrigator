@@ -38,7 +38,7 @@ Route::get('/insurer-integrations/insurer/{insurerId}', [InsurerIntegrationContr
 Route::get('/vehicle-details', [\App\Http\Controllers\Api\VehicleDetailsController::class, 'getDetails']);
 
 Route::middleware('merchant.api')->group(function () {
-    Route::post('/insurance/quotes', [QuoteController::class, 'store']);
+    Route::post('/insurance/getQuotes', [QuoteController::class, 'store']);
     Route::get('/insurance/makes', [VehicleMappingController::class, 'getMakes']);
     Route::get('/insurance/models', [VehicleMappingController::class, 'getModels']);
     Route::get('/insurance/trims', [VehicleMappingController::class, 'getTrims']);

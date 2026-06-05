@@ -123,6 +123,13 @@ class TataAigMasterService
                     'status' => $response->status(),
                     'body' => $response->body()
                 ]);
+            }
+            $apiStatus = $response['status'] ?? null;
+            if ($response->failed() || $apiStatus !== 200) {
+                // Log::error('Tata AIG Quote API Failure', [
+                //     'status' => $response->status(),
+                //     'body'   => $response->body()
+                // ]);
 
                 return [
                     'success' => false,

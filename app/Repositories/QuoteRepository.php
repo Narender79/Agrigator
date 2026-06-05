@@ -30,13 +30,13 @@ class QuoteRepository implements QuoteRepositoryInterface
                 'price_offered'            => $data['price_offered'] ?? 0,
                 'status'                   => $data['status'] ?? 'failed',
                 'request_payload'          => $data['request_payload'] ?? [],
-                'insurer_response_payload' => $data['insurer_response_payload'] ?? [],
+                'insurer_response_payload' => $data['insurer_response_payload']['data']['data']  ?? [],
             ]);
 
             // 2. Save in SQL (if the insurer API returned a successful response)
             $response = $data['insurer_response_payload'] ?? null;
-            if ($response && ($response['success'] ?? false)) {
-                $resData = $response['data'] ?? [];
+            if ($response && ($response['success'] ?? false) && $response['data']['data']['0']) {
+                $resData = $response['data']['data']['0'] ?? [];
                 // Extract premium components
                 $premiumBreakup = $resData['premium_break_up'] ?? [];
                 $odPremium = $premiumBreakup['total_od_premium']['total_od'] ?? 0;
@@ -59,7 +59,6 @@ class QuoteRepository implements QuoteRepositoryInterface
                     'product_id'                    => $data['request_payload']['product_id'] ?? null,
                     'coverage_type'                 => $data['request_payload']['prev_pol_type'] ?? 'Package',
                     'idv'                           => $vehicleIdv,
-                    'idv_type'                      => 'system_calculated',
                     'policy_term_months'            => isset($data['request_payload']['pol_tenure']) ? ($data['request_payload']['pol_tenure'] * 12) : 12,
                     'selected_add_ons'              => $premiumBreakup['total_addOns'] ?? null,
                     'ncb_percentage'                => $data['request_payload']['pre_pol_ncb'] ?? 0,

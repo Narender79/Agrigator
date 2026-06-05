@@ -12,12 +12,12 @@ class QuoteController extends Controller
 
     public function store(Request $request)
     {
-        $insurerSlug = $request->query('insurer');
+        $insurerSlug = $request->query('insurer', 'tata-aig');
 
         if (!$insurerSlug) {
             return response()->json([
                 'success' => false,
-                'message' => 'Please provide the target insurer parameter (e.g. ?insurer=tata-aig).'
+                'message' => 'Please provide the target insurer parameter.'
             ], 400);
         }
 
