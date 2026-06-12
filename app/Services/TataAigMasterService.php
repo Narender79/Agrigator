@@ -26,8 +26,25 @@ class TataAigMasterService
 
     public function __construct()
     {
+        // 1. Try config first for ease of development and overriding
+        $config = config('services.tata_aig');
 
-        // 1. Try to find the record matching the current environment
+        if (!empty($config['client_id']) && !empty($config['client_secret']) && !empty($config['token_url'])) {
+            $this->insurerId = 1;
+            $this->clientId = $config['client_id'];
+            $this->clientSecret = $config['client_secret'];
+            $this->baseUrl = $config['base_url'];
+            $this->tokenUrl = $config['token_url'];
+            $this->scope = $config['scope'] ?? '';
+            $this->timeout = 15;
+            $this->cacheKey = 'tata_aig_access_token';
+            $this->expiryBufferSeconds = 60;
+            $this->apiKey = $config['api_key'] ?? '';
+            $this->productCode = $config['product_code'] ?? '3187';
+            return;
+        }
+
+        // 2. Fall back to database config
         $integration = InsurerIntegration::where('insurer_id', 1)->first();
         $this->loadFormData($integration);
     }
@@ -111,7 +128,11 @@ class TataAigMasterService
         try {
             $token = $this->getAccessToken();
 
-            $url = rtrim($this->baseUrl, '/') . '/motor/v1/quote';
+            $productCode = $payload['product_code'] ?? $this->productCode;
+            $isTwoWheeler = ($productCode === '3187');
+            $path = $isTwoWheeler ? '/tw-motor/v1/quote' : '/motor/v1/quote';
+            $url = rtrim($this->baseUrl, '/') . $path;
+
             $payload = $this->sanitizePayload($payload);
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $token,
@@ -188,6 +209,58 @@ class TataAigMasterService
             ])->getBody()->getContents(), true);
         } catch (\Throwable $th) {
             return array('code' => 'failed', 'message' => $th->getMessage() ?? 'Something went wrong');
+        }
+    }
+    /**
+     * Send proposal request to Tata AIG Proposal API.
+     *
+     * @param array $payload
+     * @return array
+     */
+    public function fetchProposal(array $payload)
+    {
+        try {
+            $token = $this->getAccessToken();
+
+            $productCode = $payload['product_code'] ?? $this->productCode;
+            $isTwoWheeler = ($productCode === '3187');
+            $path = $isTwoWheeler ? '/tw-motor/v1/proposal' : '/motor/v1/proposal';
+            $url = rtrim($this->baseUrl, '/') . $path;
+
+            $payload = $this->sanitizePayload($payload);
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $token,
+                'x-api-key' => $this->apiKey,
+                'Content-Type' => 'application/json'
+            ])->timeout($this->timeout)->post($url, $payload);
+
+            if ($response->failed()) {
+                Log::error('Tata AIG Proposal API Failure', [
+                    'status' => $response->status(),
+                    'body' => $response->body()
+                ]);
+            }
+
+            $responseJson = $response->json() ?? [];
+            $apiStatus = $responseJson['status'] ?? null;
+
+            if ($response->failed() || $apiStatus !== 200) {
+                return [
+                    'success' => false,
+                    'message' => $responseJson['message_txt'] ?? 'Failed to submit proposal to Tata AIG.',
+                    'errors'  => $responseJson
+                ];
+            }
+
+            return [
+                'success' => true,
+                'data' => $responseJson
+            ];
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'An error occurred while submitting proposal: ' . $e->getMessage()
+            ];
         }
     }
 }

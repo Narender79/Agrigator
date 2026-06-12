@@ -35,7 +35,7 @@ class QuoteRepository implements QuoteRepositoryInterface
 
             // 2. Save in SQL (if the insurer API returned a successful response)
             $response = $data['insurer_response_payload'] ?? null;
-            if ($response && ($response['success'] ?? false) && $response['data']['data']['0']) {
+            if (!empty($response) && !empty($response['success']) && isset($response['data']['data']['0'])) {
                 $resData = $response['data']['data']['0'] ?? [];
                 // Extract premium components
                 $premiumBreakup = $resData['premium_break_up'] ?? [];
@@ -50,33 +50,34 @@ class QuoteRepository implements QuoteRepositoryInterface
                 $gst  = $cgst + $sgst + $igst;
                 $netPremium = $premiumBreakup['net_premium'] ?? 0;
                 $totalPremium = $premiumBreakup['final_premium'] ?? 0;
-                $vehicleIdv = $resData['data']['vehicle_idv'] ?? 0;
-                Quote::create([
-                    'user_id'                       => auth()->id(),
+                $vehicleIdv = $resData['pol_dlts']['vehicle_idv'] ?? 0;
+                $userId = auth()->id() ?? request()->attributes->get('merchant_partner')?->user_id;
+                 Quote::create([
+                    'user_id'                       => $userId,
                     'insurer_id'                    => $data['insurer_id'],
                     'quote_request_session_id'      => $data['session_id'] ?? null,
                     'vehicle_id'                    => $data['vehicle_id'] ?? null,
                     'product_id'                    => $data['request_payload']['product_id'] ?? null,
                     'coverage_type'                 => $data['request_payload']['prev_pol_type'] ?? 'Package',
-                    'idv'                           => $vehicleIdv,
-                    'policy_term_months'            => isset($data['request_payload']['pol_tenure']) ? ($data['request_payload']['pol_tenure'] * 12) : 12,
+                    'idv'                           => (float) $vehicleIdv,
+                    'policy_term_months'            => isset($data['request_payload']['pol_tenure']) ? ((int) $data['request_payload']['pol_tenure'] * 12) : 12,
                     'selected_add_ons'              => $premiumBreakup['total_addOns'] ?? null,
-                    'ncb_percentage'                => $data['request_payload']['pre_pol_ncb'] ?? 0,
+                    'ncb_percentage'                => (int) ($data['request_payload']['pre_pol_ncb'] ?? 0),
                     'ncb_verified'                  => false,
                     'previous_policy_expiry'        => $data['request_payload']['prev_pol_end_date'] ?? null,
                     'is_new_vehicle'                => ($data['request_payload']['business_type_no'] ?? null) === '01',
-                    'own_damage_premium'            => $odPremium,
-                    'third_party_premium'           => $tpPremium,
-                    'add_on_premium'                => $addOnPremium,
-                    'pa_cover_premium'              => $paCoverPremium,
-                    'ncb_discount'                  => $ncbDiscount,
-                    'voluntary_deductible'          => $data['request_payload']['voluntary_amount'] ?? 0,
-                    'voluntary_deductible_discount' => 0,
-                    'anti_theft_discount'           => 0,
-                    'aai_discount'                  => 0,
-                    'net_premium'                   => $netPremium,
-                    'gst'                           => $gst,
-                    'total_premium'                 => $totalPremium,
+                    'own_damage_premium'            => (float) $odPremium,
+                    'third_party_premium'           => (float) $tpPremium,
+                    'add_on_premium'                => (float) $addOnPremium,
+                    'pa_cover_premium'              => (float) $paCoverPremium,
+                    'ncb_discount'                  => (float) $ncbDiscount,
+                    'voluntary_deductible'          => (float) ($data['request_payload']['voluntary_amount'] ?? 0),
+                    'voluntary_deductible_discount' => 0.0,
+                    'anti_theft_discount'           => 0.0,
+                    'aai_discount'                  => 0.0,
+                    'net_premium'                   => (float) $netPremium,
+                    'gst'                           => (float) $gst,
+                    'total_premium'                 => (float) $totalPremium,
                     'status'                        => 'active',
                     'valid_until'                   => now()->addDays(7),
                     'insurer_quote_ref'             => $resData['quote_id'] ?? null,

@@ -25,6 +25,10 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->bind(QuoteRepositoryInterface::class, QuoteRepository::class);
         $this->app->bind(QuoteServiceInterface::class, QuoteService::class);
+
+        // Bind Proposal interface & repository
+        $this->app->bind(\App\Repositories\Interfaces\ProposalRepositoryInterface::class, \App\Repositories\ProposalRepository::class);
+        $this->app->bind(\App\Services\Interfaces\ProposalServiceInterface::class, \App\Services\ProposalService::class);
     }
 
     /**

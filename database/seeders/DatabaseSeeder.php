@@ -99,6 +99,34 @@ class DatabaseSeeder extends Seeder
                 'email_verified_at' => now(),
             ]
         );
+
+        // 5. Create Partner linked to Partner Admin User
+        $partnerAdmin = User::where('email', 'partneradmin@droom.in')->first();
+        if ($partnerAdmin) {
+            $partner = \App\Models\Partner::updateOrCreate(
+                ['user_id' => $partnerAdmin->id],
+                [
+                    'business_name' => 'Droom Test Partner',
+                    'partner_type' => 'dealer',
+                    'contact_email' => 'partneradmin@droom.in',
+                    'contact_person_name' => 'Partner Admin',
+                    'contact_person_mobile' => '9999999992',
+                    'status' => 'active',
+                    'created_by' => 1,
+                    'updated_by' => 1,
+                ]
+            );
+
+            // 6. Create Partner Credentials
+            \App\Models\PartnerCredential::updateOrCreate(
+                ['partner_id' => $partner->id, 'api_key' => 'test_api_key_123'],
+                [
+                    'api_secret_hash' => Hash::make('test_api_secret_123'),
+                    'status' => 'active',
+                    'rate_limit_tier' => 'standard',
+                ]
+            );
+        }
     }
 }
 

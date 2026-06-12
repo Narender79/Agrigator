@@ -41,6 +41,8 @@ return [
         'client_id' => env('TATA_AIG_CLIENT_ID'),
         'client_secret' => env('TATA_AIG_CLIENT_SECRET'),
         'product_code' => env('TATA_AIG_PRODUCT_CODE', '3187'),
+        'token_url' => env('TATA_AIG_TOKEN_URL'),
+        'scope' => env('TATA_AIG_SCOPE'),
     ],
 
     'google' => [

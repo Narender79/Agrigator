@@ -14,7 +14,7 @@ class QuoteController extends Controller
     public function store(Request $request)
     {
         try {
-            // Define common required fields for both 2W and 4W
+            // Defining common required fields for both 2W and 4W
             $rules = [
                 'make_id'             => 'required|integer',
                 'model_id'            => 'required|integer',
@@ -49,7 +49,7 @@ class QuoteController extends Controller
                 $rules['pol_plan_variant']     = 'required|string';
                 $rules['motor_plan_opted_no']  = 'required|string';
             }
-            // Runing validation. If it fails, Laravel automatically returns 422 with the validation errors.
+            // Runing validation.
             $validated = Validator::make($request->all(), $rules);
             if ($validated->fails()) {
                 return response()->json([
