@@ -24,7 +24,7 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             // Drop the column if we roll back
-            $table->dropColumn('user_role');
+            $table->dropColumn('user_type');
         });
     }
 };

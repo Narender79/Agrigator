@@ -30,13 +30,13 @@ class QuoteRepository implements QuoteRepositoryInterface
                 'price_offered'            => $data['price_offered'] ?? 0,
                 'status'                   => $data['status'] ?? 'failed',
                 'request_payload'          => $data['request_payload'] ?? [],
-                'insurer_response_payload' => $data['insurer_response_payload']['data']['data']  ?? [],
+                'insurer_response_payload' => $data['insurer_response_payload']['data']['data']['0']  ?? [],
             ]);
 
             // 2. Save in SQL (if the insurer API returned a successful response)
             $response = $data['insurer_response_payload'] ?? null;
             if (!empty($response) && !empty($response['success']) && isset($response['data']['data']['0'])) {
-                $resData = $response['data']['data']['0'] ?? [];
+                $resData = $response['data']['data']['0']['data'] ?? [];
                 // Extract premium components
                 $premiumBreakup = $resData['premium_break_up'] ?? [];
                 $odPremium = $premiumBreakup['total_od_premium']['total_od'] ?? 0;
@@ -52,7 +52,7 @@ class QuoteRepository implements QuoteRepositoryInterface
                 $totalPremium = $premiumBreakup['final_premium'] ?? 0;
                 $vehicleIdv = $resData['pol_dlts']['vehicle_idv'] ?? 0;
                 $userId = auth()->id() ?? request()->attributes->get('merchant_partner')?->user_id;
-                 Quote::create([
+                Quote::create([
                     'user_id'                       => $userId,
                     'insurer_id'                    => $data['insurer_id'],
                     'quote_request_session_id'      => $data['session_id'] ?? null,

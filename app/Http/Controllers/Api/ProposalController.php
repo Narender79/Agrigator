@@ -16,10 +16,10 @@ class ProposalController extends Controller
         try {
             // Validation rules matching both our DB fields and Tata AIG requirements
             $rules = [
-                'quote_id'            => 'required|integer|exists:quotes,id',
+                // 'quote_no'            => 'required|string|exists:quotes,id',
                 'salutation'          => 'required|string|in:Mr,Mrs,Ms,Dr,M/s',
                 'first_name'          => 'required|string|max:100',
-                'middle_name'         => 'nullable|string|max:100',
+                // 'middle_name'         => 'nullable|string|max:100',
                 'last_name'           => 'required|string|max:100',
                 'dob'                 => 'required|date_format:Y-m-d',
                 'gender'              => 'required|string|in:Male,Female,Other',
@@ -30,7 +30,7 @@ class ProposalController extends Controller
                 'mobile'              => 'required|string|regex:/^[6-9][0-9]{9}$/',
                 // Address details
                 'address_line_1'      => 'required|string|max:255',
-                'address_line_2'      => 'nullable|string|max:255',
+                // 'address_line_2'      => 'nullable|string|max:255',
                 'pincode'             => 'required|string|size:6',
                 // Nominee Details
                 'nominee_name'        => 'required|string|max:150',

@@ -16,9 +16,8 @@ return new class extends Migration
 
             // Relationships
             $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('set null');
-            $table->foreignId('quote_id')->nullable()->constrained('quotes')->onDelete('set null');
-            $table->unsignedBigInteger('policy_id')->nullable(); // Can link to insurance_policies table later
-
+            $table->string('policy_id', 100)->nullable();
+            $table->string('quote_id', 100)->nullable();
             // Proposer Personal Details
             $table->string('salutation', 10); // Mr, Mrs, Ms, Dr, M/s
             $table->string('first_name', 100);
