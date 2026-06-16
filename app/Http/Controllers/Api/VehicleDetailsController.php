@@ -40,7 +40,7 @@ class VehicleDetailsController extends Controller
             $rcNumber = $request->query('rc_number');
 
             $gatewayUrl = config('services.droom.gateway_url');
-            
+
             // Get OAuth token dynamically
             $tokenRes = $this->authService->getOAuthToken();
             if (($tokenRes['code'] ?? '') !== 'success') {
@@ -59,8 +59,8 @@ class VehicleDetailsController extends Controller
             $response1 = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $dTkn,
             ])->get($gatewayUrl . '/dss/v1/vehicle-rc-details', [
-                'rc_number' => $rcNumber,
-            ]);
+                        'rc_number' => $rcNumber,
+                    ]);
 
             if (!$response1->successful()) {
                 Log::error('Failed to fetch RC details', [
@@ -138,6 +138,8 @@ class VehicleDetailsController extends Controller
                 ]);
                 return Response::failed($data2['message'] ?? 'MMYT matching failed.', 400, [], 400);
             }
+
+            $data2['data']['vehicleData'] = $vehicleData;
 
             // Return the successful response back to the user
             return Response::success(
