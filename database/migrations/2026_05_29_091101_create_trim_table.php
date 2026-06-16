@@ -15,7 +15,7 @@ return new class extends Migration
             $table->increments('id');
             $table->integer('make_id')->index();
             $table->integer('model_id')->index();
-            $table->string('trim_name', 50)->index();
+            $table->string('trim_name', 150)->index();
             $table->tinyInteger('upcoming')->default(0);
             $table->enum('status', ['active', 'disabled'])->default('active');
             $table->date('launchDate')->nullable();

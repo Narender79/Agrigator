@@ -221,20 +221,18 @@ class TataAigMasterService
     {
         try {
             $token = $this->getAccessToken();
-
-            $productCode = $payload['product_code'] ?? $this->productCode;
-            $isTwoWheeler = ($productCode === '3187');
-            $path = $isTwoWheeler ? '/tw-motor/v1/proposal' : '/motor/v1/proposal';
+            $path = '/motor/v1/proposal';
             $url = rtrim($this->baseUrl, '/') . $path;
 
             $payload = $this->sanitizePayload($payload);
+            // \Log::info($payload);
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $token,
                 'x-api-key' => $this->apiKey,
                 'Content-Type' => 'application/json'
             ])->timeout($this->timeout)->post($url, $payload);
-
-            if ($response->failed()) {
+            // \Log::info($response);
+            if ($response->failed() || $response['status'] !== 200) {
                 Log::error('Tata AIG Proposal API Failure', [
                     'status' => $response->status(),
                     'body' => $response->body()
@@ -242,15 +240,6 @@ class TataAigMasterService
             }
 
             $responseJson = $response->json() ?? [];
-            $apiStatus = $responseJson['status'] ?? null;
-
-            if ($response->failed() || $apiStatus !== 200) {
-                return [
-                    'success' => false,
-                    'message' => $responseJson['message_txt'] ?? 'Failed to submit proposal to Tata AIG.',
-                    'errors'  => $responseJson
-                ];
-            }
 
             return [
                 'success' => true,

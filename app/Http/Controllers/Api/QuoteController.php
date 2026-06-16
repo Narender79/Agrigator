@@ -16,9 +16,12 @@ class QuoteController extends Controller
         try {
             // Defining common required fields for both 2W and 4W
             $rules = [
-                'make_id'             => 'required|integer',
-                'model_id'            => 'required|integer',
-                'trim_id'             => 'required|integer',
+                // 'make_id'             => 'required|integer',
+                // 'model_id'            => 'required|integer',
+                // 'trim_id'             => 'required|integer',
+                'make_name'           => 'required|string',
+                'model_name'          => 'required|string',
+                'trim_name'           => 'required|string',
                 'q_producer_code'     => 'required|string',
                 'man_year'            => 'required',
                 'pol_start_date'      => 'required|date_format:Y-m-d',

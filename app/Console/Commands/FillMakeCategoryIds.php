@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Models\Make;
 use App\Models\VehicleModel;
+use \App\Models\ModelMapping;
 
 class FillMakeCategoryIds extends Command
 {
@@ -62,14 +63,11 @@ class FillMakeCategoryIds extends Command
         $this->info("Total in data found in db : {$total}");
 
         foreach ($makes as $make) {
-            $model = VehicleModel::where('make_id', $make->id)->whereNotNull('category_id')->first();
-
-            if ($model) {
-                $categoryId = $model->category_id;
+            $modelMapping = ModelMapping::where('dr_make_id', $make->id)->whereNotNull('category_id')->first();
+            if ($modelMapping) {
+                $categoryId = $modelMapping->category_id;
                 $make->category_id = $categoryId;
-
                 $make->save();
-
                 $this->line("Updated make: {$make->make_name} (ID: {$make->id}) ➔ category_id: {$categoryId}");
                 $updated++;
             } else {

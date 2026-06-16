@@ -45,18 +45,18 @@ class QuoteService implements QuoteServiceInterface
                     'message' => 'Insurer is not active or available.'
                 ];
             }
-
+            \Log::info($payload);
             // 2. Fetch mapping details using Droom IDs
             $makeMapp = $this->makeMapping->where('insurer_id', $insurer->id)
-                ->where('dr_make_id', $payload['make_id'] ?? null)
+                ->where('insurer_make_name', $payload['make_name'] ?? null)
                 ->where('status', 'active')
                 ->first();
             $modelMapp = $this->modelMapping->where('insurer_id', $insurer->id)
-                ->where('dr_model_id', $payload['model_id'] ?? null)
+                ->where('insurer_model_name', $payload['model_name'] ?? null)
                 ->where('status', 'active')
                 ->first();
             $trimMapp = $this->trimMapping->where('insurer_id', $insurer->id)
-                ->where('dr_trim_id', $payload['trim_id'] ?? null)
+                ->where('insurer_trim_name', $payload['trim_name'] ?? null)
                 ->where('status', 'active')
                 ->first();
 
@@ -76,9 +76,9 @@ class QuoteService implements QuoteServiceInterface
                 ['session_id' => $sessionId],
                 [
                     'vehicle_data' => [
-                        'make_id'  => $payload['make_id'],
-                        'model_id' => $payload['model_id'],
-                        'trim_id'  => $payload['trim_id'],
+                        'make_name'  => $payload['make_name'],
+                        'model_name' => $payload['model_name'],
+                        'trim_name'  => $payload['trim_name'],
                         'man_year' => $payload['man_year'] ?? null,
                     ],
                     'status' => 'complete',

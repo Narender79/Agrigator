@@ -48,8 +48,8 @@ class VehicleMappingSeeder extends Seeder
         $variantNameIdx = array_search('txt_model_variant', $headers);
 
         if (
-            $makeNoIdx === false || $makeNameIdx === false || 
-            $modelNoIdx === false || $modelNameIdx === false || 
+            $makeNoIdx === false || $makeNameIdx === false ||
+            $modelNoIdx === false || $modelNameIdx === false ||
             $variantNoIdx === false || $variantNameIdx === false
         ) {
             $this->command->error("Required columns not found in CSV headers.");
@@ -132,7 +132,7 @@ class VehicleMappingSeeder extends Seeder
 
             // --- 2. SEED MODELS ---
             $existingModels = [];
-            VehicleModel::all(['id', 'make_id', 'model_name'])->each(function($m) use (&$existingModels) {
+            VehicleModel::all(['id', 'make_id', 'model_name'])->each(function ($m) use (&$existingModels) {
                 $existingModels["{$m->make_id}-" . strtoupper($m->model_name)] = $m->id;
             });
 
@@ -161,13 +161,13 @@ class VehicleMappingSeeder extends Seeder
 
             // Re-fetch all models
             $modelMap = [];
-            VehicleModel::all(['id', 'make_id', 'model_name'])->each(function($m) use (&$modelMap) {
+            VehicleModel::all(['id', 'make_id', 'model_name'])->each(function ($m) use (&$modelMap) {
                 $modelMap["{$m->make_id}-" . strtoupper($m->model_name)] = $m->id;
             });
 
             // --- 3. SEED TRIMS ---
             $existingTrims = [];
-            Trim::all(['id', 'make_id', 'model_id', 'trim_name'])->each(function($t) use (&$existingTrims) {
+            Trim::all(['id', 'make_id', 'model_id', 'trim_name'])->each(function ($t) use (&$existingTrims) {
                 $existingTrims["{$t->make_id}-{$t->model_id}-" . strtoupper($t->trim_name)] = $t->id;
             });
 
@@ -197,7 +197,7 @@ class VehicleMappingSeeder extends Seeder
 
             // Re-fetch all trims
             $trimMap = [];
-            Trim::all(['id', 'make_id', 'model_id', 'trim_name'])->each(function($t) use (&$trimMap) {
+            Trim::all(['id', 'make_id', 'model_id', 'trim_name'])->each(function ($t) use (&$trimMap) {
                 $trimMap["{$t->make_id}-{$t->model_id}-" . strtoupper($t->trim_name)] = $t->id;
             });
 

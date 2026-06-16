@@ -17,28 +17,9 @@ class ProposalService implements ProposalServiceInterface
     public function createProposal(array $payload): array
     {
         try {
-            // 1. Fetch the corresponding Quote record
-            $quote = Quote::findOrFail($payload['quote_id']);
+            // \Log::info("ok report");
 
-            // 2. Fetch proposal_id from MongoDB quote request logs
-            $quoteLog = QuoteReqRes::where('insurer_id', $quote->insurer_id)
-                ->where('request_payload.session_id', $quote->quote_request_session_id)
-                ->first();
-
-            $proposalId = null;
-            if ($quoteLog && is_array($quoteLog->insurer_response_payload)) {
-                // insurer_response_payload is stored as an array of quotes
-                $resData = $quoteLog->insurer_response_payload[0] ?? [];
-                $proposalId = $resData['proposal_id'] ?? null;
-            }
-            if (!$proposalId) {
-                return [
-                    'success' => false,
-                    'message' => 'Insurer proposal ID could not be retrieved from the quoting session.'
-                ];
-            }
-
-            // 3. Construct Tata AIG Proposal API request body
+            // 1. Construct Tata AIG Proposal API request body
             $tataAigPayload = [
                 'proposer_salutation'          => $payload['salutation'],
                 'proposer_fname'               => $payload['first_name'],
@@ -61,20 +42,20 @@ class ProposalService implements ProposalServiceInterface
                 'nominee_age'                  => (int) $payload['nominee_age'],
                 'appointee_name'               => $payload['appointee_name'] ?? '',
                 'appointee_relation'           => $payload['appointee_relation'] ?? '',
-                'proposal_id'                  => $proposalId,
-                'product_id'                   => $quote->product_id ?? 'M300000000001',
+                'proposal_id'                  => $payload['proposal_id'],
+                'product_id'                   => 'M300000000001',
                 'declaration'                  => 'Yes',
                 'vehicle_chassis'              => $payload['vehicle_chassis'],
                 'vehicle_engine'               => $payload['vehicle_engine'],
                 'proposer_pincode'             => $payload['pincode'],
-                'quote_no'                     => $quote->insurer_quote_ref,
+                'quote_no'                     => $payload['quote_no'],
                 'carriedOutBy'                 => 'No',
                 '__finalize'                   => '1',
             ];
 
-
             // 4. Send request to insurer
             $result = $this->tataAigService->fetchProposal($tataAigPayload);
+            \Log::info($result);
             if (!$result['success']) {
                 return $result;
             }
@@ -82,7 +63,8 @@ class ProposalService implements ProposalServiceInterface
             $userId = auth()->id() ?? request()->attributes->get('merchant_partner')?->user_id;
             $proposal = $this->proposalRepo->saveProposal([
                 'user_id'              => $userId,
-                'quote_id'             => $quote->id,
+                'policy_id'            => $result['data']['data']['0']['policy_id'],
+                'quote_id'             => $result['data']['data']['0']['quote_id'],
                 'salutation'           => $payload['salutation'],
                 'first_name'           => $payload['first_name'],
                 'middle_name'          => $payload['middle_name'] ?? null,
@@ -108,15 +90,14 @@ class ProposalService implements ProposalServiceInterface
                 'vehicle_engine'       => $payload['vehicle_engine'],
                 'pre_insurer_name'     => $payload['pre_insurer_name'] ?? null,
                 'pre_insurer_no'       => $payload['pre_insurer_no'] ?? null,
-                'insurer_proposal_ref' => $result['data']['data']['proposal_id'] ?? $proposalId,
-                'insurer_quote_ref'    => $quote->insurer_quote_ref,
+                'insurer_proposal_ref' => $result['data']['data']['0']['proposal_id'],
                 'status'               => 'payment_pending',
             ]);
             return [
                 'success' => true,
                 'message' => 'Proposal created successfully.',
                 'data'    => [
-                    'proposal_id'          => $proposal->id,
+                    'droom_proposal_id'          => $proposal->id,
                     'insurer_proposal_ref' => $proposal->insurer_proposal_ref,
                     'status'               => $proposal->status,
                 ]
