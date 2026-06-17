@@ -37,7 +37,7 @@ class QuoteController extends Controller
                 'regno_2'             => 'required|string',
                 'regno_3'             => 'required|string',
                 'regno_4'             => 'required|string',
-                'product_code'        => 'required|string',
+                // 'product_code'        => 'required|string',
                 '__finalize'          => 'required|string',
             ];
 

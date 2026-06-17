@@ -158,6 +158,7 @@ class TataAigMasterService
                     'errors' => $response->json()
                 ];
             }
+            // \Log::info($response);
             return [
                 'success' => true,
                 'data' => $response->json()

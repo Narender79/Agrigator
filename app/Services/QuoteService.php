@@ -10,8 +10,12 @@ use App\Services\TataAigMasterService;
 use App\Models\MakeMapping;
 use App\Models\ModelMapping;
 use App\Models\TrimMapping;
+use App\Models\Make;
+use App\Models\VehicleModel;
+use App\Models\Trim;
 use Illuminate\Support\Facades\Log;
 use Exception;
+use Predis\Command\Argument\Search\SchemaFields\VectorField;
 
 class QuoteService implements QuoteServiceInterface
 {
@@ -45,18 +49,29 @@ class QuoteService implements QuoteServiceInterface
                     'message' => 'Insurer is not active or available.'
                 ];
             }
-            \Log::info($payload);
+
+            // finding the droom make_id from make name
+            $makeObj = Make::where('make_name', $payload['make_name'] ?? null)->first();
+            $modelObj = VehicleModel::where('model_name', $payload['model_name'] ?? null)->first();
+            $trimObj = Trim::where('trim_name', $payload['trim_name'] ?? null)->first();
+            if (!$makeObj || !$modelObj || !$trimObj) {
+                return [
+                    'success' => false,
+                    'message' => 'Make name , Model name, Trim name is not in Droom.'
+                ];
+            }
+            // \Log::info($payload);
             // 2. Fetch mapping details using Droom IDs
             $makeMapp = $this->makeMapping->where('insurer_id', $insurer->id)
-                ->where('insurer_make_name', $payload['make_name'] ?? null)
+                ->where('dr_make_id', $makeObj->id ?? null)
                 ->where('status', 'active')
                 ->first();
             $modelMapp = $this->modelMapping->where('insurer_id', $insurer->id)
-                ->where('insurer_model_name', $payload['model_name'] ?? null)
+                ->where('dr_model_id', $modelObj->id ?? null)
                 ->where('status', 'active')
                 ->first();
             $trimMapp = $this->trimMapping->where('insurer_id', $insurer->id)
-                ->where('insurer_trim_name', $payload['trim_name'] ?? null)
+                ->where('dr_trim_id', $trimObj->id ?? null)
                 ->where('status', 'active')
                 ->first();
 
@@ -169,7 +184,7 @@ class QuoteService implements QuoteServiceInterface
             // \Log::info($payload);
             // 4. Call Tata AIG Master Service directly
             $result = $this->tataAigService->fetchQuote($payload);
-            // \Log::info($result);
+            \Log::info($result['data']);
 
             // 5. Log the quote request & response inside your local database via the Repository
             $price = $result['success'] ? ($result['data']['premium_details']['total_premium'] ?? 0) : 0;
@@ -195,6 +210,17 @@ class QuoteService implements QuoteServiceInterface
                 'policy_plans' => config("insurance_masters.policy_plans.{$vehicleType}", []),
                 'motor_plans'  => config("insurance_masters.motor_plans.{$vehicleType}", []),
                 'add_ons'      => config("insurance_masters.add_ons.{$vehicleType}", []),
+                'business_types'            => config('insurance_masters.business_types'),
+                'prev_policy_types'         => config('insurance_masters.prev_policy_types'),
+                'prev_policy_ncbs'          => config('insurance_masters.prev_policy_ncbs'),
+                'voluntary_amounts'         => config('insurance_masters.voluntary_amounts'),
+                'nominee_relationships'     => config('insurance_masters.nominee_relationships'),
+                'appointee_relationships'   => config('insurance_masters.appointee_relationships'),
+                'financier_types'           => config('insurance_masters.financier_types'),
+                'tyre_secure_options'       => config('insurance_masters.tyre_secure_options'),
+                'engine_secure_options'     => config('insurance_masters.engine_secure_options'),
+                'owner_driver_declarations' => config('insurance_masters.owner_driver_declarations'),
+                'occupations'               => config('insurance_masters.occupations'),
             ];
 
             return $result;
