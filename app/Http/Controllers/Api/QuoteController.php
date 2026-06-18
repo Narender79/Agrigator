@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\Interfaces\QuoteServiceInterface;
+use App\Utils\Response;
 use Illuminate\Http\Request;
 use \Illuminate\Support\Facades\Validator;
 
@@ -62,7 +63,10 @@ class QuoteController extends Controller
                 ], 422);
             }
             $result = $this->quoteService->getInsurerQuote($request->all());
-            return response()->json($result, $result['success'] ? 200 : 400);
+              if (empty($result['success'])) {
+                return Response::failed(data_get($result, 'errors'), 500, array('data'=>$result));
+            }
+            return Response::success($result);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
