@@ -310,8 +310,9 @@ class SyncInsurerMasters extends Command
 
     private function resolveMake(int $tataCode, string $tataName): ?object
     {
-        if ($id = ($this->makeOverrides()[$tataCode] ?? null)) {
-            return Make::find($id);
+        if (array_key_exists($tataCode, $this->makeOverrides())) {
+            $id = $this->makeOverrides()[$tataCode];
+            return $id ? Make::find($id) : null;
         }
 
         foreach ($this->nameVariants($tataName) as $v) {
@@ -448,7 +449,14 @@ class SyncInsurerMasters extends Command
 
     private function makeOverrides(): array
     {
-        return [];
+        return [
+            140  => 21,   // TATA MOTORS -> Tata (ID: 21)
+            125  => 31,   // MARUTI -> Maruti Suzuki (ID: 31)
+            123  => 81,   // MAHINDRA & MAHINDRA -> Mahindra (ID: 81)
+            956  => 61,   // HERO -> Hero (ID: 61)
+            994  => null, // JAYHIND -> Ignore (prevent mapping to Mahindra)
+            1010 => null, // ZERRO -> Ignore (prevent mapping to Hero)
+        ];;
     }
     private function modelOverrides(): array
     {

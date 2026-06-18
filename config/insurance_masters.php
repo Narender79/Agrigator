@@ -87,5 +87,76 @@ return [
             ['code' => 'rsa', 'name' => 'Roadside Assistance (RSA)'],
             ['code' => 'add_towing', 'name' => 'Emergency Towing Cover']
         ]
+    ],
+    'business_types' => [
+        ['code' => '01', 'name' => 'New Business'],
+        ['code' => '03', 'name' => 'Roll Over'],
+        ['code' => '04', 'name' => 'Used Vehicle']
+    ],
+    'prev_policy_types' => [
+        ['code' => 'Package', 'name' => 'Package'],
+        ['code' => 'Liability', 'name' => 'Liability']
+    ],
+    'prev_policy_ncbs' => ['0', '20', '25', '35', '45', '50', '55'],
+    'voluntary_amounts' => ['2500', '5000', '7500', '15000'],
+    // 'nominee_relationships' => [
+    //     'Aunt', 'Brother', 'Brother In Law', 'Chauffeur', 'Daughter', 'Daughter In Law', 
+    //     'Employee', 'Employer', 'Father', 'Father In Law', 'Fiancé', 'Friend', 
+    //     'Granddaughter', 'Grandfather', 'Grandmother', 'Grandson', 'Husband', 'Insured', 
+    //     'Mother', 'Mother In Law', 'Nephew', 'Niece', 'RELATIVE', 'Relative', 'Self', 
+    //     'Sister', 'Sister In Law', 'Son', 'Son In Law', 'Spouse', 'Uncle', 'Wife', 'OTHERS'
+    // ],
+    // 'appointee_relationships' => ['Daughter', 'Father', 'Mother', 'Son', 'Spouse'],
+    'financier_types' => [
+        ['code' => 'Hire Purchase', 'name' => 'Hire Purchase'],
+        ['code' => 'Hypothecation', 'name' => 'Hypothecation'],
+        ['code' => 'Lease agreement', 'name' => 'Lease agreement']
+    ],
+    'tyre_secure_options' => [
+        ['code' => 'DEPRECIATION BASIS', 'name' => 'DEPRECIATION BASIS'],
+        ['code' => 'REPLACEMENT BASIS', 'name' => 'REPLACEMENT BASIS']
+    ],
+    'engine_secure_options' => [
+        ['code' => 'WITH DEDUCTIBLE', 'name' => 'WITH DEDUCTIBLE'],
+        ['code' => 'WITHOUT DEDUCTIBLE', 'name' => 'WITHOUT DEDUCTIBLE']
+    ],
+    'owner_driver_declarations' => [
+        ['code' => 'None', 'name' => 'None'],
+        ['code' => 'No valid driving license', 'name' => 'No valid driving license'],
+        ['code' => 'Other motor policy with CPA', 'name' => 'Other motor policy with CPA'],
+        ['code' => 'Have standalone CPA >= 15 L', 'name' => 'Have standalone CPA >= 15 L']
+    ],
+    'occupations' => [
+        ['code' => '1', 'name' => 'ACCOUNTANTS'],
+        ['code' => '182', 'name' => 'ARCHITECT'],
+        ['code' => '183', 'name' => 'AUDITOR'],
+        ['code' => '2', 'name' => 'BANKERS'],
+        ['code' => '3', 'name' => 'BLUE COLLAR(LABORER)'],
+        ['code' => '4', 'name' => 'BUILDERS'],
+        ['code' => '5', 'name' => 'CIVIL SERVANTS'],
+        ['code' => '6', 'name' => 'CONTRACTORS'],
+        ['code' => '181', 'name' => 'DOCTORS'],
+        ['code' => '9', 'name' => 'ENGINEER'],
+        ['code' => '18', 'name' => 'EXPORTERS'],
+        ['code' => '10', 'name' => 'HIGH TENSION ELECTRICAL INSTALLATION'],
+        ['code' => '21', 'name' => 'INDUSTRIALIST'],
+        ['code' => '22', 'name' => 'JOCKEYS'],
+        ['code' => '184', 'name' => 'LAWYER'],
+        ['code' => '15', 'name' => 'MACHINE OPERATORS'],
+        ['code' => '11', 'name' => 'MERCHANT EXPORTER'],
+        ['code' => '23', 'name' => 'OTHER'],
+        ['code' => '14', 'name' => 'PAMPHLET WRITERS AND DISTRIBUTORS'],
+        ['code' => '185', 'name' => 'PROFESSIONAL'],
+        ['code' => '16', 'name' => 'PUBLIC SERVANTS'],
+        ['code' => '20', 'name' => 'RACING'],
+        ['code' => '13', 'name' => 'SELF EMPLOYED'],
+        ['code' => '12', 'name' => 'SERVICE'],
+        ['code' => '134', 'name' => 'SOCIAL SERVICE'],
+        ['code' => '126', 'name' => 'SYSTEMS ANALYST'],
+        ['code' => '19', 'name' => 'TEACHER'],
+        ['code' => '17', 'name' => 'UNDERGROUND MINES WORKER'],
+        ['code' => '24', 'name' => 'UNEMPLOYED'],
+        ['code' => '7', 'name' => 'VETERINARY DOCTORS'],
+        ['code' => '8', 'name' => 'WOOD WORKING MACHINISTS']
     ]
 ];

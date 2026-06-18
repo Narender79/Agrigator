@@ -22,7 +22,7 @@ services:
     container_name: droom_mongodb
     restart: unless-stopped
     ports:
-      - "27017:27017"
+      - "27018:27018"
     volumes:
       - mongo_data:/data/db
 
