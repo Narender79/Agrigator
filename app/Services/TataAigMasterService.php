@@ -158,10 +158,12 @@ class TataAigMasterService
                     'errors' => $response->json()
                 ];
             }
-            // \Log::info($response);
+            // \Log::info($responses);
+            $qoute = $response['data'][0];
+            // \Log::info($qoute); 
             return [
                 'success' => true,
-                'data' => $response->json()
+                'data' => $qoute
             ];
         } catch (Exception $e) {
             // Log::error('Tata AIG fetchQuote exception: ' . $e->getMessage(), ['exception' => $e]);

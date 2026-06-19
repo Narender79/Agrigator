@@ -183,11 +183,14 @@ class QuoteService implements QuoteServiceInterface
             unset($payload['make_id'], $payload['model_id'], $payload['trim_id']);
             // \Log::info($payload);
             // 4. Call Tata AIG Master Service directly
-            $result = $this->tataAigService->fetchQuote($payload);
-            \Log::info($result['data']);
+            $response = $this->tataAigService->fetchQuote($payload);
+            $status = $response['success'] ? 'success' : 'failed';
+            $result = $response['data'];
+
+            // die();
 
             // 5. Log the quote request & response inside your local database via the Repository
-            $price = $result['success'] ? ($result['data']['premium_details']['total_premium'] ?? 0) : 0;
+            $price = $result['data']['premium_break_up']['final_premium'];
 
             $this->quoteRepo->saveQuote([
                 'session_id'               => $sessionId,
@@ -201,9 +204,9 @@ class QuoteService implements QuoteServiceInterface
                 'price_offered'            => $price,
                 'request_payload'          => $payload,
                 'insurer_response_payload' => $result,
-                'status'                   => $result['success'] ? 'success' : 'failed',
+                'status'                   => $status,
             ]);
-
+            // die();
             // Check the category_id from the model mapping to determine 4w vs 2w dynamically
             $vehicleType = ($modelMapp && $modelMapp->category_id == 81) ? '4w' : '2w';
             $result['available_options'] = [

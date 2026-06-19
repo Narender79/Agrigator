@@ -19,6 +19,8 @@ class QuoteRepository implements QuoteRepositoryInterface
     public function saveQuote(array $data): string
     {
         try {
+            \Log::info($data);
+            // die();
             $quote = QuoteReqRes::create([
                 'insurer_id'               => $data['insurer_id'] ?? null,
                 'proposer_type'            => $data['proposer_type'] ?? null,
@@ -30,13 +32,13 @@ class QuoteRepository implements QuoteRepositoryInterface
                 'price_offered'            => $data['price_offered'] ?? 0,
                 'status'                   => $data['status'] ?? 'failed',
                 'request_payload'          => $data['request_payload'] ?? [],
-                'insurer_response_payload' => $data['insurer_response_payload']['data']['data']['0']  ?? [],
+                'insurer_response_payload' => $data['insurer_response_payload']['data'] ?? [],
             ]);
 
             // 2. Save in SQL (if the insurer API returned a successful response)
             $response = $data['insurer_response_payload'] ?? null;
-            if (!empty($response) && !empty($response['success']) && isset($response['data']['data']['0'])) {
-                $resData = $response['data']['data']['0']['data'] ?? [];
+            if (!empty($response) && !empty($response['success'])) {
+                $resData = $response['data'] ?? [];
                 // Extract premium components
                 $premiumBreakup = $resData['premium_break_up'] ?? [];
                 $odPremium = $premiumBreakup['total_od_premium']['total_od'] ?? 0;
