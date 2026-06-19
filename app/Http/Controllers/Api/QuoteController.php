@@ -23,15 +23,15 @@ class QuoteController extends Controller
                 'make_name'           => 'required|string',
                 'model_name'          => 'required|string',
                 'trim_name'           => 'required|string',
-                'q_producer_code'     => 'required|string',
+                // 'q_producer_code'     => 'required|string',
                 'man_year'            => 'required',
-                'pol_start_date'      => 'required|date_format:Y-m-d',
+                // 'pol_start_date'      => 'required|date_format:Y-m-d',
                 'place_reg'           => 'required|string',
-                'proposer_type'       => 'required|string',
+                // 'proposer_type'       => 'required|string',
                 'proposer_pincode'    => 'required|string',
                 'business_type_no'    => 'required|string',
                 'dor'                 => 'required|date_format:Y-m-d',
-                'prev_pol_type'       => 'required|string',
+                // 'prev_pol_type'       => 'required|string',
                 'claim_last'          => 'required|string',
                 'pre_pol_ncb'         => 'required|string',
                 'regno_1'             => 'required|string',
@@ -40,18 +40,20 @@ class QuoteController extends Controller
                 'regno_4'             => 'required|string',
                 // 'product_code'        => 'required|string',
                 '__finalize'          => 'required|string',
+                'vehicle_type' => 'required|string'
             ];
 
             // Conditional validation based on vehicle product code
-            if ($request->input('product_code') === '3187') {
+            if ($request->input('vehicle_type') === '2w') {
                 // 2W specific fields
                 $rules['pol_tenure'] = 'required|string';
                 $rules['plan_type']  = 'required|string';
+                $request->request->set('product_code', '3187');
             } else {
                 // 4W specific fields
                 $rules['pol_plan_id']          = 'required|string';
-                $rules['pol_plan_variant']     = 'required|string';
-                $rules['motor_plan_opted_no']  = 'required|string';
+                $rules['motor_plan_opted_no'] = 'required|string';
+                $request->request->set('pol_plan_variant', 'PackagePolicy');
             }
             // Runing validation.
             $validated = Validator::make($request->all(), $rules);
