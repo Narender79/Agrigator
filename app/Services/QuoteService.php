@@ -223,6 +223,7 @@ class QuoteService implements QuoteServiceInterface
                 'occupations'               => config('insurance_masters.occupations'),
             ];
 
+            $result['session_id'] = $sessionId;
             return $result;
         } catch (Exception $e) {
             // Log::error('Error fetching quote in QuoteService: ' . $e->getMessage(), [
