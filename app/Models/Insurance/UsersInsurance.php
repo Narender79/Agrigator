@@ -43,7 +43,6 @@ class UsersInsurance extends Model
         'request_no',
         'policy_url',
         'city',
-        'registration_no',
         'platform',
         'status',
         'source',

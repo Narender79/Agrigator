@@ -7,6 +7,7 @@ use App\Models\Insurance\QuoteReqRes;
 use App\Repositories\Interfaces\ProposalRepositoryInterface;
 use App\Services\Interfaces\ProposalServiceInterface;
 use App\Services\TataAigMasterService;
+use App\Models\Insurance\UsersInsurance;
 use Exception;
 use Override;
 
@@ -56,6 +57,7 @@ class ProposalService implements ProposalServiceInterface
             // 4. Send request to insurer
             $result = $this->tataAigService->fetchProposal($tataAigPayload);
             \Log::info($result);
+            // die();
             if (!$result['success']) {
                 return $result;
             }
@@ -63,8 +65,8 @@ class ProposalService implements ProposalServiceInterface
             $userId = auth()->id() ?? request()->attributes->get('merchant_partner')?->user_id;
             $proposal = $this->proposalRepo->saveProposal([
                 'user_id'              => $userId,
-                'policy_id'            => $result['data']['data']['0']['policy_id'],
-                'quote_id'             => $result['data']['data']['0']['quote_id'],
+                'policy_id'            => $result['data']['policy_id'],
+                'quote_id'             => $result['data']['quote_id'],
                 'salutation'           => $payload['salutation'],
                 'first_name'           => $payload['first_name'],
                 'middle_name'          => $payload['middle_name'] ?? null,
@@ -90,9 +92,37 @@ class ProposalService implements ProposalServiceInterface
                 'vehicle_engine'       => $payload['vehicle_engine'],
                 'pre_insurer_name'     => $payload['pre_insurer_name'] ?? null,
                 'pre_insurer_no'       => $payload['pre_insurer_no'] ?? null,
-                'insurer_proposal_ref' => $result['data']['data']['0']['proposal_id'],
-                'status'               => 'payment_pending',
+                'insurer_proposal_ref' => $result['data']['proposal_id'],
+                'status'               => $result['data']['proposal_stage'],
             ]);
+
+
+
+            // 6. Update the users_insurance record with proposal details for the same session_id
+            $proposalStage = $result['data']['proposal_stage'];
+            $record = UsersInsurance::where('proposal_id', $payload['proposal_id'])
+                ->first();
+            if ($record) {
+                $sessionId = $record->insurance_unique_id;
+            }
+            if (!empty($sessionId)) {
+                UsersInsurance::updateOrCreate(
+                    ['insurance_unique_id' => $sessionId],
+                    [
+                        'proposal_id'     => $result['data']['proposal_id'] ?? null,
+                        'proposal_no'     => $result['data']['proposal_no'] ?? null,
+                        'document_id'     => $result['data']['document_id'] ?? null,
+                        'policy_id'       => $result['data']['policy_id'] ?? null,
+                        'registration_no' => trim(($payload['regno_1'] ?? '') . ($payload['regno_2'] ?? '') . ($payload['regno_3'] ?? '') . ($payload['regno_4'] ?? '')),
+                        'city'            => $payload['city'] ?? null,
+                        'email'           => $payload['email'] ?? null,
+                        'name'            => trim($payload['first_name'] . ' ' . ($payload['middle_name'] ?? '') . ' ' . $payload['last_name']),
+                        'phone'           => $payload['mobile'] ?? null,
+                        'status'          => 'proposal_' . $proposalStage,
+                    ]
+                );
+            }
+
             return [
                 'success' => true,
                 'message' => 'Proposal created successfully.',

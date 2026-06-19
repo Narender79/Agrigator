@@ -245,10 +245,12 @@ class TataAigMasterService
             }
 
             $responseJson = $response->json() ?? [];
-
+            $proposal = $responseJson['data'][0];
+            // \Log::info($proposal);
+            // die();
             return [
                 'success' => true,
-                'data' => $responseJson
+                'data' => $proposal
             ];
         } catch (Exception $e) {
             return [

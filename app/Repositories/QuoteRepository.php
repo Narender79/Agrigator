@@ -20,9 +20,10 @@ class QuoteRepository implements QuoteRepositoryInterface
     public function saveQuote(array $data): string
     {
         try {
-            \Log::info($data);
+            // \Log::info($data);
             // die();
             $quote = QuoteReqRes::create([
+                'session_id'               => $data['session_id'] ?? null,
                 'insurer_id'               => $data['insurer_id'] ?? null,
                 'proposer_type'            => $data['proposer_type'] ?? null,
                 'proposer_pincode'         => $data['proposer_pincode'] ?? null,
@@ -98,12 +99,14 @@ class QuoteRepository implements QuoteRepositoryInterface
                         'model'            => $data['vehicle_model'] ?? null,
                         'trim'             => $data['vehicle_variant'] ?? null,
                         'year'             => $data['man_year'] ?? null,
-                        'quote_id'         => $response['quote_id'] ?? null,
-                        'quote_no'         => $response['quote_no'] ?? null,
-                        'product_id'       => $response['product_id'] ?? null,
-                        'product_group_id' => $response['product_group_id'] ?? null,
-                        'pol_plan_id'      => $response['pol_plan_id'] ?? null,
-                        'pol_plan_variant' => $response['pol_plan_variant'] ?? null,
+                        'quote_id'         => $resData['quote_id'] ?? null,
+                        'quote_no'         => $resData['quote_no'] ?? null,
+                        'proposal_id'      => $resData['proposal_id'] ?? null,
+                        'product_id'       => $resData['product_id'] ?? null,
+                        'product_group_id' => $resData['product_group_id'] ?? null,
+                        'pol_plan_id'      => $resData['pol_plan_id'] ?? null,
+                        'pol_plan_variant' => $resData['pol_plan_variant'] ?? null,
+                        'policy_start_date' => $resData['pol_start_date'] ?? null,
                         'net_premium'      => $netPremium,
                         'status'           => "quote_" . $response['quote_stage'], // completed / inprogress
                         'platform'         => $data['request_payload']['platform'] ?? 'droom',
