@@ -131,6 +131,13 @@ class QuoteService implements QuoteServiceInterface
                 $payload['business_type'] = $payload['business_type_no'] === '01' ? 'New Business' : 'Roll Over';
             }
 
+            // Default values  
+            $payload['q_producer_code'] = $payload['q_producer_code'] ?? '4984727878';
+            $payload['product_id'] = $payload['product_id'] ?? 'M300000000001';
+            $payload['pol_start_date'] = $payload['pol_start_date'] ?? now()->format('Y-m-d');
+            $payload['proposer_type'] = $payload['proposer_type'] ?? 'Individual';
+            $payload['prev_pol_type'] = $payload['prev_pol_type'] ?? 'Package';
+
             // Dynamically merge defaults when __finalize is '0' using null-coalescing
             $payload['__finalize']                    = $payload['__finalize'] ?? '0';
             $payload['cng_lpg_cover']                 = $payload['cng_lpg_cover'] ?? 'false';
