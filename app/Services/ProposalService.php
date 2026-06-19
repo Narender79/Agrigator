@@ -113,6 +113,7 @@ class ProposalService implements ProposalServiceInterface
                         'proposal_no'     => $result['data']['proposal_no'] ?? null,
                         'document_id'     => $result['data']['document_id'] ?? null,
                         'policy_id'       => $result['data']['policy_id'] ?? null,
+                        'nstp_id'         => $result['data']['nstp_id'] ?? null,
                         'registration_no' => trim(($payload['regno_1'] ?? '') . ($payload['regno_2'] ?? '') . ($payload['regno_3'] ?? '') . ($payload['regno_4'] ?? '')),
                         'city'            => $payload['city'] ?? null,
                         'email'           => $payload['email'] ?? null,
