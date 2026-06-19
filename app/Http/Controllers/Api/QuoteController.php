@@ -54,6 +54,7 @@ class QuoteController extends Controller
                 $rules['pol_plan_id']          = 'required|string';
                 $rules['motor_plan_opted_no'] = 'required|string';
                 $request->request->set('pol_plan_variant', 'PackagePolicy');
+                $request->request->set('product_code', '3184');
             }
             // Runing validation.
             $validated = Validator::make($request->all(), $rules);
