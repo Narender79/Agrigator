@@ -10,6 +10,7 @@ class QuoteReqRes extends Model
     protected $table = 'insurance_quotes';
 
     protected $fillable = [
+        'session_id',
         'insurer_id',
         'proposer_type',
         'proposer_pincode',

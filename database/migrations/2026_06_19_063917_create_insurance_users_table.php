@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('users_insurance', function (Blueprint $table) {
             $table->id(); // int(10) unsigned auto_increment primary key
+            $table->string('insurance_unique_id', 200)->unique()->nullable();
             $table->string('user_id', 20)->nullable();
             $table->string('email', 200)->nullable();
             $table->string('name', 200)->nullable();
@@ -43,14 +44,14 @@ return new class extends Migration
             $table->date('policy_start_date')->nullable();
             $table->string('policy_no', 300)->nullable();
             $table->decimal('net_premium', 12, 2)->nullable();
-            $table->integer('request_no')->nullable();
+            // $table->integer('request_no')->nullable();
             $table->text('policy_url')->nullable();
             $table->string('city', 300)->nullable();
             $table->string('registration_no', 15)->nullable();
             $table->string('platform', 255)->default('droom');
             $table->string('status', 255)->default('quoteCreate');
             $table->string('source', 255)->nullable();
-            $table->string('utm_source', 255)->nullable();
+            // $table->string('utm_source', 255)->nullable();
             $table->string('quotes_mail', 255)->default('0');
             $table->string('proposal_mail', 255)->default('0');
             $table->string('aggregator_name', 255)->nullable();

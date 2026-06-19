@@ -146,7 +146,7 @@ class TataAigMasterService
                     'body' => $response->body()
                 ]);
             }
-            \Log::info($response);
+            // \Log::info($response);
             // die();
             if ($response->failed() || $apiStatus !== 200) {
                 // Log::error('Tata AIG Quote API Failure', [
@@ -245,10 +245,12 @@ class TataAigMasterService
             }
 
             $responseJson = $response->json() ?? [];
-
+            $proposal = $responseJson['data'][0];
+            // \Log::info($proposal);
+            // die();
             return [
                 'success' => true,
-                'data' => $responseJson
+                'data' => $proposal
             ];
         } catch (Exception $e) {
             return [
