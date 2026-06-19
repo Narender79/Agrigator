@@ -66,7 +66,7 @@ class QuoteController extends Controller
                 ], 422);
             }
             $result = $this->quoteService->getInsurerQuote($request->all());
-            if (empty($result)) {
+            if (isset($result['success']) && $result['success'] === false) {
                 return Response::failed(data_get($result, 'errors'), 500, array('data' => $result));
             }
             return Response::success($result);

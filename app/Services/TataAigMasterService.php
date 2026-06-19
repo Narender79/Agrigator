@@ -139,13 +139,15 @@ class TataAigMasterService
                 'x-api-key' => $this->apiKey,
                 'Content-Type' => 'application/json'
             ])->timeout($this->timeout)->post($url, $payload);
-            if ($response->failed()) {
+            $apiStatus = $response['status'] ?? null;
+            if ($response->failed() || $apiStatus !== 200) {
                 Log::error('Tata AIG Quote API Failure', [
                     'status' => $response->status(),
                     'body' => $response->body()
                 ]);
             }
-            $apiStatus = $response['status'] ?? null;
+            \Log::info($response);
+            // die();
             if ($response->failed() || $apiStatus !== 200) {
                 // Log::error('Tata AIG Quote API Failure', [
                 //     'status' => $response->status(),

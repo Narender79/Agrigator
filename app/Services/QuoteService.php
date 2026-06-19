@@ -192,9 +192,12 @@ class QuoteService implements QuoteServiceInterface
             // 4. Call Tata AIG Master Service directly
             $response = $this->tataAigService->fetchQuote($payload);
             $status = $response['success'] ? 'success' : 'failed';
+            if ($status == 'failed') {
+                return $response;
+            }
+            // die();
             $result = $response['data'];
 
-            // die();
 
             // 5. Log the quote request & response inside your local database via the Repository
             $price = $result['data']['premium_break_up']['final_premium'];

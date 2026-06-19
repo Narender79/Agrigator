@@ -16,7 +16,7 @@ class VehicleMappingSeeder extends Seeder
 {
     public function run(): void
     {
-        $csvPath = database_path('seeders/2W.csv');
+        $csvPath = database_path('seeders/W.csv');
 
         if (!file_exists($csvPath)) {
             $this->command->error("CSV file not found at: {$csvPath}");
