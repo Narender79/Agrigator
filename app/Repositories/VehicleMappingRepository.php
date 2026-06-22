@@ -10,7 +10,6 @@ use App\Models\ModelMapping;
 use App\Models\TrimMapping;
 use App\Repositories\Interfaces\VehicleMappingRepositoryInterface;
 use Illuminate\Support\Collection;
-use Override;
 
 class VehicleMappingRepository implements VehicleMappingRepositoryInterface
 {
@@ -71,5 +70,44 @@ class VehicleMappingRepository implements VehicleMappingRepositoryInterface
             ->get(['trim.id', 'trim.trim_name']);
 
         return $trims;
+    }
+
+    public function findMakeByName(?string $name): ?Make
+    {
+        return $this->make->where('make_name', $name)->first();
+    }
+
+    public function findModelByName(?string $name): ?VehicleModel
+    {
+        return $this->model->where('model_name', $name)->first();
+    }
+
+    public function findTrimByName(?string $name): ?Trim
+    {
+        return $this->trim->where('trim_name', $name)->first();
+    }
+
+    public function findMakeMapping(int $insurerId, ?int $makeId): ?MakeMapping
+    {
+        return $this->makeMapping->where('insurer_id', $insurerId)
+            ->where('dr_make_id', $makeId)
+            ->where('status', 'active')
+            ->first();
+    }
+
+    public function findModelMapping(int $insurerId, ?int $modelId): ?ModelMapping
+    {
+        return $this->modelMapping->where('insurer_id', $insurerId)
+            ->where('dr_model_id', $modelId)
+            ->where('status', 'active')
+            ->first();
+    }
+
+    public function findTrimMapping(int $insurerId, ?int $trimId): ?TrimMapping
+    {
+        return $this->trimMapping->where('insurer_id', $insurerId)
+            ->where('dr_trim_id', $trimId)
+            ->where('status', 'active')
+            ->first();
     }
 }

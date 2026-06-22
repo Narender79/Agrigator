@@ -2,46 +2,35 @@
 
 namespace App\Services;
 
-use App\Models\Insurance\Insurer;
 use App\Services\Interfaces\QuoteServiceInterface;
 use App\Repositories\Interfaces\QuoteRepositoryInterface;
-use \App\Models\Insurance\QuoteRequest;
 use App\Services\TataAigMasterService;
-use App\Models\MakeMapping;
-use App\Models\ModelMapping;
-use App\Models\TrimMapping;
-use App\Models\Make;
-use App\Models\VehicleModel;
-use App\Models\Trim;
+use App\Repositories\Interfaces\InsurerRepositoryInterface;
+use App\Repositories\Interfaces\VehicleMappingRepositoryInterface;
+
 use Illuminate\Support\Facades\Log;
 use Exception;
 use Predis\Command\Argument\Search\SchemaFields\VectorField;
 
 class QuoteService implements QuoteServiceInterface
 {
-    protected Insurer $insurer;
-    protected MakeMapping $makeMapping;
-    protected ModelMapping $modelMapping;
-    protected TrimMapping $trimMapping;
+    protected InsurerRepositoryInterface $insurerRepo;
+    protected VehicleMappingRepositoryInterface $vehicleMappingRepo;
     public function __construct(
         private readonly QuoteRepositoryInterface $quoteRepo,
         private readonly TataAigMasterService $tataAigService,
-        Insurer $insurer,
-        MakeMapping $makeMapping,
-        ModelMapping $modelMapping,
-        TrimMapping $trimMapping
+        InsurerRepositoryInterface $insurerRepo,
+        VehicleMappingRepositoryInterface $vehicleMappingRepo
     ) {
-        $this->insurer = $insurer;
-        $this->makeMapping = $makeMapping;
-        $this->modelMapping = $modelMapping;
-        $this->trimMapping = $trimMapping;
+        $this->insurerRepo = $insurerRepo;
+        $this->vehicleMappingRepo = $vehicleMappingRepo;
     }
 
     public function getInsurerQuote(array $payload): array
     {
         try {
             // 1. Resolve Insurer 
-            $insurer = $this->insurer->where('company_name', 'TATA AIG GENERAL INSURANCE')->first();
+            $insurer = $this->insurerRepo->getActiveByName('TATA AIG GENERAL INSURANCE');
 
             if (!$insurer || $insurer->status !== 'active') {
                 return [
@@ -51,29 +40,21 @@ class QuoteService implements QuoteServiceInterface
             }
 
             // finding the droom make_id from make name
-            $makeObj = Make::where('make_name', $payload['make_name'] ?? null)->first();
-            $modelObj = VehicleModel::where('model_name', $payload['model_name'] ?? null)->first();
-            $trimObj = Trim::where('trim_name', $payload['trim_name'] ?? null)->first();
+            $makeObj = $this->vehicleMappingRepo->findMakeByName($payload['make_name'] ?? null);
+            $modelObj = $this->vehicleMappingRepo->findModelByName($payload['model_name'] ?? null);
+            $trimObj = $this->vehicleMappingRepo->findTrimByName($payload['trim_name'] ?? null);
+
             if (!$makeObj || !$modelObj || !$trimObj) {
                 return [
                     'success' => false,
-                    'message' => 'Make name , Model name, Trim name is not in Droom.'
+                    'message' => 'Unable to find Make name , Model name, Trim name.'
                 ];
             }
             // \Log::info($payload);
             // 2. Fetch mapping details using Droom IDs
-            $makeMapp = $this->makeMapping->where('insurer_id', $insurer->id)
-                ->where('dr_make_id', $makeObj->id ?? null)
-                ->where('status', 'active')
-                ->first();
-            $modelMapp = $this->modelMapping->where('insurer_id', $insurer->id)
-                ->where('dr_model_id', $modelObj->id ?? null)
-                ->where('status', 'active')
-                ->first();
-            $trimMapp = $this->trimMapping->where('insurer_id', $insurer->id)
-                ->where('dr_trim_id', $trimObj->id ?? null)
-                ->where('status', 'active')
-                ->first();
+            $makeMapp = $this->vehicleMappingRepo->findMakeMapping($insurer->id, $makeObj->id ?? null);
+            $modelMapp = $this->vehicleMappingRepo->findModelMapping($insurer->id, $modelObj->id ?? null);
+            $trimMapp = $this->vehicleMappingRepo->findTrimMapping($insurer->id, $trimObj->id ?? null);
 
             // If no mapping is found for the selected vehicle, return a clear mapping error
             if (!$makeMapp || !$modelMapp || !$trimMapp) {
@@ -87,20 +68,17 @@ class QuoteService implements QuoteServiceInterface
             $sessionId = $payload['session_id'] ?? (string) \Illuminate\Support\Str::uuid();
             $payload['session_id'] = $sessionId;
             // Store the quote request session in SQL
-            QuoteRequest::firstOrCreate(
-                ['session_id' => $sessionId],
-                [
-                    'vehicle_data' => [
-                        'make_name'  => $payload['make_name'],
-                        'model_name' => $payload['model_name'],
-                        'trim_name'  => $payload['trim_name'],
-                        'man_year' => $payload['man_year'] ?? null,
-                    ],
-                    'status' => 'complete',
-                    'insurer_count' => 1,
-                    'expires_at' => now()->addDays(7),
-                ]
-            );
+            $this->quoteRepo->firstOrCreateQuoteRequest($sessionId, [
+                'vehicle_data' => [
+                    'make_name'  => $payload['make_name'],
+                    'model_name' => $payload['model_name'],
+                    'trim_name'  => $payload['trim_name'],
+                    'man_year' => $payload['man_year'] ?? null,
+                ],
+                'status' => 'complete',
+                'insurer_count' => 1,
+                'expires_at' => now()->addDays(7),
+            ]);
 
             // 3. Inject carrier-specific nomenclature and codes into the payload
             $payload['vehicle_make']       = $makeMapp->insurer_make_name;

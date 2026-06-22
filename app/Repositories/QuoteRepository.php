@@ -6,7 +6,10 @@ use App\Repositories\Interfaces\QuoteRepositoryInterface;
 use App\Models\Insurance\QuoteReqRes;
 use App\Models\Insurance\InsurerQuoteResult;
 use \App\Models\Insurance\Quote;
+use \App\Models\Insurance\UsersInsurance;
+use \App\Models\Insurance\QuoteRequest;
 use Exception;
+use Override;
 
 class QuoteRepository implements QuoteRepositoryInterface
 {
@@ -19,9 +22,10 @@ class QuoteRepository implements QuoteRepositoryInterface
     public function saveQuote(array $data): string
     {
         try {
-            \Log::info($data);
+            // \Log::info($data);
             // die();
             $quote = QuoteReqRes::create([
+                'session_id'               => $data['session_id'] ?? null,
                 'insurer_id'               => $data['insurer_id'] ?? null,
                 'proposer_type'            => $data['proposer_type'] ?? null,
                 'proposer_pincode'         => $data['proposer_pincode'] ?? null,
@@ -37,7 +41,7 @@ class QuoteRepository implements QuoteRepositoryInterface
 
             // 2. Save in SQL (if the insurer API returned a successful response)
             $response = $data['insurer_response_payload'] ?? null;
-            if (!empty($response) && !empty($response['success'])) {
+            if (!empty($response) && !empty($response['data'])) {
                 $resData = $response['data'] ?? [];
                 // Extract premium components
                 $premiumBreakup = $resData['premium_break_up'] ?? [];
@@ -85,6 +89,33 @@ class QuoteRepository implements QuoteRepositoryInterface
                     'insurer_quote_ref'             => $resData['quote_id'] ?? null,
                     'source_channel'                => 'web',
                 ]);
+                UsersInsurance::updateOrCreate(
+                    ['insurance_unique_id' => $data['session_id']],
+                    [
+                        'user_id'          => $userId,
+                        'email'            => $data['request_payload']['email'] ?? null,
+                        'name'             => $data['request_payload']['proposer_name'] ?? null,
+                        'phone'            => $data['request_payload']['mobile_no'] ?? null,
+                        'vehicleType'      => ($data['request_payload']['product_code'] ?? '') === '3187' ? '2w' : '4w',
+                        'make'             => $data['vehicle_make'] ?? null,
+                        'model'            => $data['vehicle_model'] ?? null,
+                        'trim'             => $data['vehicle_variant'] ?? null,
+                        'year'             => $data['man_year'] ?? null,
+                        'quote_id'         => $resData['quote_id'] ?? null,
+                        'quote_no'         => $resData['quote_no'] ?? null,
+                        'proposal_id'      => $resData['proposal_id'] ?? null,
+                        'product_id'       => $resData['product_id'] ?? null,
+                        'product_group_id' => $resData['product_group_id'] ?? null,
+                        'pol_plan_id'      => $resData['pol_plan_id'] ?? null,
+                        'pol_plan_variant' => $resData['pol_plan_variant'] ?? null,
+                        'policy_start_date' => $resData['pol_start_date'] ?? null,
+                        'net_premium'      => $netPremium,
+                        'status'           => "quote_" . $response['quote_stage'], // completed / inprogress
+                        'platform'         => $data['request_payload']['platform'] ?? 'droom',
+                        'source'           => $data['request_payload']['source'] ?? null,
+                        'aggregator_name'  => 'TATA AIG',
+                    ]
+                );
             }
 
             return (string) $quote->_id;
@@ -125,5 +156,13 @@ class QuoteRepository implements QuoteRepositoryInterface
             // ]);
             throw new \RuntimeException('Database logging error: ' . $e->getMessage());
         }
+    }
+
+    public function firstOrCreateQuoteRequest(string $sessionId, array $data): QuoteRequest
+    {
+        return \App\Models\Insurance\QuoteRequest::firstOrCreate(
+            ['session_id' => $sessionId],
+            $data
+        );
     }
 }
