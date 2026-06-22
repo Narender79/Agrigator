@@ -13,4 +13,6 @@ interface QuoteRepositoryInterface
      * @return string The generated MongoDB ObjectId string
      */
     public function saveQuote(array $data): string;
+    public function checkValidQuoteID(string $quoteId): object;
+    public function updatePaymentStatus(array $data): object;
 }

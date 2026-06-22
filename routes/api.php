@@ -44,7 +44,7 @@ Route::middleware('merchant.api')->group(function () {
     Route::get('/insurance/models', [VehicleMappingController::class, 'getModels']);
     Route::get('/insurance/trims', [VehicleMappingController::class, 'getTrims']);
     Route::post('/insurance/proposal', [ProposalController::class, 'store']);
-    Route::post('/insurance/update-payment-status', [ProposalController::class, 'updateInsusrancePaymentStatus']);
+    Route::post('/insurance/save-quote-payment', [QuoteController::class, 'saveQuotePayment']);
 });
 
 Route::post('/login', [User::class, 'login']);

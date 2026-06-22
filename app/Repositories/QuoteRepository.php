@@ -11,6 +11,10 @@ use Exception;
 
 class QuoteRepository implements QuoteRepositoryInterface
 {
+    public function __construct(
+        private UsersInsurance $userInsModel
+    ) {
+    }
     /**
      * Store a new quote request/response locally inside MongoDB.
      *
@@ -154,5 +158,25 @@ class QuoteRepository implements QuoteRepositoryInterface
             // ]);
             throw new \RuntimeException('Database logging error: ' . $e->getMessage());
         }
+    }
+
+    public function checkValidQuoteID(string $quoteId): object{
+        return $this->userInsModel->where('quote_id', $quoteId)->first();
+    }
+
+    public function updatePaymentStatus(array $data): object{
+        $insuranceObj =  $this->checkValidQuoteID($data['quote_id']);
+        $insuranceObj->payment_id = $data['payment_id'];
+        $insuranceObj->payment_status = $data['payment_status'];
+        $insuranceObj->droom_payment_id = $data['droom_payment_id'];
+        $insuranceObj->gateway_txn_id = $data['gateway_txn_id'];
+        $insuranceObj->insurance_txn_start_time = now();
+
+        if($data['payment_status'] == 'success'){
+            $insuranceObj->status = "payment_success";
+        }
+        $insuranceObj->save();
+        return $insuranceObj;
+
     }
 }
