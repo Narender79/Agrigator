@@ -7,13 +7,13 @@ use App\Models\Insurance\QuoteReqRes;
 use App\Repositories\Interfaces\ProposalRepositoryInterface;
 use App\Services\Interfaces\ProposalServiceInterface;
 use App\Services\TataAigMasterService;
-use App\Models\Insurance\UsersInsurance;
+use App\Repositories\Interfaces\UsersInsuranceRepositoryInterface;
 use Exception;
 use Override;
 
 class ProposalService implements ProposalServiceInterface
 {
-    public function __construct(private readonly ProposalRepositoryInterface $proposalRepo, private readonly TataAigMasterService $tataAigService) {}
+    public function __construct(private readonly ProposalRepositoryInterface $proposalRepo, private readonly TataAigMasterService $tataAigService,  private readonly UsersInsuranceRepositoryInterface $usersInsuranceRepo) {}
 
     public function createProposal(array $payload): array
     {
@@ -51,7 +51,7 @@ class ProposalService implements ProposalServiceInterface
                 'proposer_pincode'             => $payload['pincode'],
                 'quote_no'                     => $payload['quote_no'],
                 'carriedOutBy'                 => 'No',
-                '__finalize'                   => '1',
+                '__finalize'                   => $payload['__finalize'],
             ];
 
             // 4. Send request to insurer
@@ -100,28 +100,24 @@ class ProposalService implements ProposalServiceInterface
 
             // 6. Update the users_insurance record with proposal details for the same session_id
             $proposalStage = $result['data']['proposal_stage'];
-            $record = UsersInsurance::where('proposal_id', $payload['proposal_id'])
-                ->first();
+            $record = $this->usersInsuranceRepo->findByProposalIdOrQuoteNo($payload['proposal_id'], $payload['quote_no'] ?? null);
             if ($record) {
                 $sessionId = $record->insurance_unique_id;
             }
             if (!empty($sessionId)) {
-                UsersInsurance::updateOrCreate(
-                    ['insurance_unique_id' => $sessionId],
-                    [
-                        'proposal_id'     => $result['data']['proposal_id'] ?? null,
-                        'proposal_no'     => $result['data']['proposal_no'] ?? null,
-                        'document_id'     => $result['data']['document_id'] ?? null,
-                        'policy_id'       => $result['data']['policy_id'] ?? null,
-                        'nstp_id'         => $result['data']['nstp_id'] ?? null,
-                        'registration_no' => trim(($payload['regno_1'] ?? '') . ($payload['regno_2'] ?? '') . ($payload['regno_3'] ?? '') . ($payload['regno_4'] ?? '')),
-                        'city'            => $payload['city'] ?? null,
-                        'email'           => $payload['email'] ?? null,
-                        'name'            => trim($payload['first_name'] . ' ' . ($payload['middle_name'] ?? '') . ' ' . $payload['last_name']),
-                        'phone'           => $payload['mobile'] ?? null,
-                        'status'          => 'proposal_' . $proposalStage,
-                    ]
-                );
+                $this->usersInsuranceRepo->updateOrCreateByUniqueId($sessionId, [
+                    'proposal_id'     => $result['data']['proposal_id'] ?? null,
+                    'proposal_no'     => $result['data']['proposal_no'] ?? null,
+                    'document_id'     => $result['data']['document_id'] ?? null,
+                    'policy_id'       => $result['data']['policy_id'] ?? null,
+                    'nstp_id'         => $result['data']['nstp_id'] ?? null,
+                    'registration_no' => trim(($payload['regno_1'] ?? '') . ($payload['regno_2'] ?? '') . ($payload['regno_3'] ?? '') . ($payload['regno_4'] ?? '')),
+                    'city'            => $payload['city'] ?? null,
+                    'email'           => $payload['email'] ?? null,
+                    'name'            => trim($payload['first_name'] . ' ' . ($payload['middle_name'] ?? '') . ' ' . $payload['last_name']),
+                    'phone'           => $payload['mobile'] ?? null,
+                    'status'          => 'proposal_' . $proposalStage,
+                ]);
             }
 
             return [

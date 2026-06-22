@@ -29,6 +29,10 @@ class AppServiceProvider extends ServiceProvider
         // Bind Proposal interface & repository
         $this->app->bind(\App\Repositories\Interfaces\ProposalRepositoryInterface::class, \App\Repositories\ProposalRepository::class);
         $this->app->bind(\App\Services\Interfaces\ProposalServiceInterface::class, \App\Services\ProposalService::class);
+
+        // Binding Insurer interface and repository
+        $this->app->bind(\App\Repositories\Interfaces\InsurerRepositoryInterface::class, \App\Repositories\InsurerRepository::class);
+        $this->app->bind(\App\Repositories\Interfaces\UsersInsuranceRepositoryInterface::class, \App\Repositories\UsersInsuranceRepository::class);
     }
 
     /**

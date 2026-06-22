@@ -7,7 +7,9 @@ use App\Models\Insurance\QuoteReqRes;
 use App\Models\Insurance\InsurerQuoteResult;
 use \App\Models\Insurance\Quote;
 use \App\Models\Insurance\UsersInsurance;
+use \App\Models\Insurance\QuoteRequest;
 use Exception;
+use Override;
 
 class QuoteRepository implements QuoteRepositoryInterface
 {
@@ -154,5 +156,13 @@ class QuoteRepository implements QuoteRepositoryInterface
             // ]);
             throw new \RuntimeException('Database logging error: ' . $e->getMessage());
         }
+    }
+
+    public function firstOrCreateQuoteRequest(string $sessionId, array $data): QuoteRequest
+    {
+        return \App\Models\Insurance\QuoteRequest::firstOrCreate(
+            ['session_id' => $sessionId],
+            $data
+        );
     }
 }

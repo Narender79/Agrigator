@@ -3,6 +3,7 @@
 namespace App\Repositories\Interfaces;
 
 use App\Models\Insurance\Quote;
+use \App\Models\Insurance\QuoteRequest;
 
 interface QuoteRepositoryInterface
 {
@@ -13,4 +14,5 @@ interface QuoteRepositoryInterface
      * @return string The generated MongoDB ObjectId string
      */
     public function saveQuote(array $data): string;
+    public function firstOrCreateQuoteRequest(string $sessionId, array $data): QuoteRequest;
 }
