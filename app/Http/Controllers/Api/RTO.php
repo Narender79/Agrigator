@@ -27,7 +27,7 @@ class RTO extends Controller
 
             return Response::failed($error);
         } catch (\Throwable $th) {
-            return Response::failed($th->getMessage());
+            return Response::exeptionResponse($th);
         }
     }
 }

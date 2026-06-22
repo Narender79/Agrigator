@@ -75,4 +75,10 @@ class Response
             'url' => $url,
         ], $status);
     }
+
+    public static function exeptionResponse($e, $code = null, array $extra = [])
+    {
+        Logger::logException($e, $code, $extra);
+        return Response::failed($e->getMessage(), 500);
+    }
 }
