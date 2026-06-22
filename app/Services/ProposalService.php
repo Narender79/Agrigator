@@ -2,14 +2,12 @@
 
 namespace App\Services;
 
-use App\Models\Insurance\Quote;
-use App\Models\Insurance\QuoteReqRes;
+use Illuminate\Support\Facades\Auth;
 use App\Repositories\Interfaces\ProposalRepositoryInterface;
 use App\Services\Interfaces\ProposalServiceInterface;
 use App\Services\TataAigMasterService;
 use App\Repositories\Interfaces\UsersInsuranceRepositoryInterface;
 use Exception;
-use Override;
 
 class ProposalService implements ProposalServiceInterface
 {
@@ -19,6 +17,14 @@ class ProposalService implements ProposalServiceInterface
     {
         try {
             // \Log::info("ok report");
+            // Pre check , checking payment status and payment id for proposal genration
+            $record = $this->usersInsuranceRepo->findByProposalIdOrQuoteNo($payload['proposal_id'], $payload['quote_no'] ?? null);
+            if (!$record || empty($record->droom_payment_id) || $record->status !== 'payment_success') {
+                return [
+                    'success' => false,
+                    'message' => 'Proposal generation is unauthorized. Payment has not been completed successfully.'
+                ];
+            }
 
             // 1. Construct Tata AIG Proposal API request body
             $tataAigPayload = [
@@ -56,13 +62,13 @@ class ProposalService implements ProposalServiceInterface
 
             // 4. Send request to insurer
             $result = $this->tataAigService->fetchProposal($tataAigPayload);
-            \Log::info($result);
+            // \Log::info($result);
             // die();
             if (!$result['success']) {
                 return $result;
             }
             // 5. Store Proposal details in SQL
-            $userId = auth()->id() ?? request()->attributes->get('merchant_partner')?->user_id;
+            $userId = Auth::id() ?? request()->attributes->get('merchant_partner')?->user_id;
             $proposal = $this->proposalRepo->saveProposal([
                 'user_id'              => $userId,
                 'policy_id'            => $result['data']['policy_id'],
@@ -99,11 +105,8 @@ class ProposalService implements ProposalServiceInterface
 
 
             // 6. Update the users_insurance record with proposal details for the same session_id
+            $sessionId = $record->insurance_unique_id;
             $proposalStage = $result['data']['proposal_stage'];
-            $record = $this->usersInsuranceRepo->findByProposalIdOrQuoteNo($payload['proposal_id'], $payload['quote_no'] ?? null);
-            if ($record) {
-                $sessionId = $record->insurance_unique_id;
-            }
             if (!empty($sessionId)) {
                 $this->usersInsuranceRepo->updateOrCreateByUniqueId($sessionId, [
                     'proposal_id'     => $result['data']['proposal_id'] ?? null,
