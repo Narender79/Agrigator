@@ -17,6 +17,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'merchant.api' => AuthenticateMerchantApi::class,
         ]);
     })
-    ->withExceptions(function (Exceptions $exceptions): void {
-        //
+   ->withExceptions(function (Exceptions $exceptions): void {
+
+        $exceptions->report(function (\Throwable $e) {
+            \App\Utils\Logger::logException($e);
+        });
     })->create();

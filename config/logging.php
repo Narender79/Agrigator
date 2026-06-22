@@ -127,6 +127,21 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
 
+        'insure_error' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/insure_error.log'),
+            'level' => 'debug',
+            'formatter' => Monolog\Formatter\JsonFormatter::class,
+        ],
+
+        'insure_detail_error' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/insure_detail_error.log'),
+            'level' => 'debug',
+            'formatter' => Monolog\Formatter\JsonFormatter::class,
+        ],
+
+
     ],
 
 ];

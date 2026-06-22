@@ -17,7 +17,7 @@ class RTO extends Controller
             $rtoCode = $request->input('rto_code') ?? '';
             $rtoCity = $request->input('rto_city') ?? '';
 
-            $response = (new TataAigMasterService)->fetchRto($rtoCode, $rtoCity);
+            $response = app(TataAigMasterService::class)->fetchRto($rtoCode, $rtoCity);
 
             if (data_get($response, 'status', 0) == 200) {
                 return Response::success(data_get($response, 'data'));
@@ -27,7 +27,7 @@ class RTO extends Controller
 
             return Response::failed($error);
         } catch (\Throwable $th) {
-            return Response::failed($th->getMessage());
+            return Response::exeptionResponse($th);
         }
     }
 }

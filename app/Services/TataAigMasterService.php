@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Models\Insurance\InsurerIntegration;
+use App\Repositories\Interfaces\InsurerRepositoryInterface;
 use Exception;
 use Illuminate\Support\Facades\Crypt;
 use GuzzleHttp\Client;
@@ -23,9 +24,11 @@ class TataAigMasterService
     protected string $cacheKey;
     protected int $expiryBufferSeconds;
     protected ?string $accessToken = null;
+    protected InsurerRepositoryInterface $insurerRepo;
 
-    public function __construct()
+    public function __construct(InsurerRepositoryInterface $insurerRepo)
     {
+        $this->insurerRepo = $insurerRepo;
         // 1. Try config first for ease of development and overriding
         $config = config('services.tata_aig');
 
@@ -45,7 +48,7 @@ class TataAigMasterService
         }
 
         // 2. Fall back to database config
-        $integration = InsurerIntegration::where('insurer_id', 1)->first();
+        $integration = $this->insurerRepo->getIntegrationByInsurerId(1);
         $this->loadFormData($integration);
     }
 

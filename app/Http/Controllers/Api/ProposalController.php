@@ -28,6 +28,8 @@ class ProposalController extends Controller
                 'occupation'          => 'required|string|max:50',
                 'email'               => 'required|email|max:150',
                 'mobile'              => 'required|string|regex:/^[6-9][0-9]{9}$/',
+                'proposal_id'         => 'required|string|min:14',
+                'quote_no'            => 'required|string|min:16',
                 // Address details
                 'address_line_1'      => 'required|string|max:255',
                 // 'address_line_2'      => 'nullable|string|max:255',

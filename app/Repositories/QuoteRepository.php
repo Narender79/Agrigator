@@ -7,7 +7,9 @@ use App\Models\Insurance\QuoteReqRes;
 use App\Models\Insurance\InsurerQuoteResult;
 use \App\Models\Insurance\Quote;
 use \App\Models\Insurance\UsersInsurance;
+use \App\Models\Insurance\QuoteRequest;
 use Exception;
+use Override;
 
 class QuoteRepository implements QuoteRepositoryInterface
 {
@@ -160,11 +162,11 @@ class QuoteRepository implements QuoteRepositoryInterface
         }
     }
 
-    public function checkValidQuoteID(string $quoteId): object{
+    public function checkValidQuoteID(string $quoteId): UsersInsurance{
         return $this->userInsModel->where('quote_id', $quoteId)->first();
     }
 
-    public function updatePaymentStatus(array $data): object{
+    public function updatePaymentStatus(array $data): UsersInsurance{
         $insuranceObj =  $this->checkValidQuoteID($data['quote_id']);
         $insuranceObj->payment_id = $data['payment_id'];
         $insuranceObj->payment_status = $data['payment_status'];
@@ -177,6 +179,13 @@ class QuoteRepository implements QuoteRepositoryInterface
         }
         $insuranceObj->save();
         return $insuranceObj;
+    }
 
+    public function firstOrCreateQuoteRequest(string $sessionId, array $data): QuoteRequest
+    {
+        return \App\Models\Insurance\QuoteRequest::firstOrCreate(
+            ['session_id' => $sessionId],
+            $data
+        );
     }
 }
