@@ -149,13 +149,11 @@ class TataAigMasterService
                     'body' => $response->body()
                 ]);
             }
-            // \Log::info($response);
-            // die();
             if ($response->failed() || $apiStatus !== 200) {
-                // Log::error('Tata AIG Quote API Failure', [
-                //     'status' => $response->status(),
-                //     'body'   => $response->body()
-                // ]);
+                Log::error('Tata AIG Quote API Failure', [
+                    'status' => $response->status(),
+                    'body'   => $response->body()
+                ]);
 
                 return [
                     'success' => false,
@@ -163,15 +161,13 @@ class TataAigMasterService
                     'errors' => $response->json()
                 ];
             }
-            // \Log::info($responses);
             $qoute = $response['data'][0];
-            // \Log::info($qoute); 
             return [
                 'success' => true,
                 'data' => $qoute
             ];
         } catch (Exception $e) {
-            // Log::error('Tata AIG fetchQuote exception: ' . $e->getMessage(), ['exception' => $e]);
+            Log::error('Tata AIG fetchQuote exception: ' . $e->getMessage(), ['exception' => $e]);
             return [
                 'success' => false,
                 'message' => 'An error occurred while fetching quote: ' . $e->getMessage()
@@ -245,6 +241,10 @@ class TataAigMasterService
                     'status' => $response->status(),
                     'body' => $response->body()
                 ]);
+                return [
+                    'success' => false,
+                    'errors' => $response->json()
+                ];
             }
 
             $responseJson = $response->json() ?? [];
@@ -259,6 +259,47 @@ class TataAigMasterService
             return [
                 'success' => false,
                 'message' => 'An error occurred while submitting proposal: ' . $e->getMessage()
+            ];
+        }
+    }
+
+
+    /**
+     * Send CKYC verification request to Tata AIG.
+     */
+
+    public function verifyCkyc(array $payload): array
+    {
+        try {
+            $token = $this->getAccessToken();
+            $path = '/ckyc-v2/verify?product=motor';
+            $url = rtrim($this->baseUrl, '/') . $path;
+            $payload = $this->sanitizePayload($payload);
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $token,
+                'x-api-key' => $this->apiKey,
+                'Content-Type' => 'application/json'
+            ])->timeout($this->timeout)->post($url, $payload);
+
+            if ($response->failed() || ($response['status'] ?? null) !== 200) {
+                Log::error('Tata AIG CKYC API Failure', [
+                    'success' => $response->status(),
+                    'data' => $response->body()
+                ]);
+                return [
+                    'success' => false,
+                    'data' => $response->body()
+                ];
+            }
+            return [
+                'success' => true,
+                'data' => $response['data'] ?? null
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => 500,
+                'message_txt' => 'An error occurred during CKYC verification: ' . $e->getMessage(),
+                'data' => null
             ];
         }
     }

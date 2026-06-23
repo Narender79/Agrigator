@@ -34,10 +34,7 @@ class QuoteController extends Controller
                 // 'prev_pol_type'       => 'required|string',
                 'claim_last'          => 'required|string',
                 'pre_pol_ncb'         => 'required|string',
-                'regno_1'             => 'required|string',
-                'regno_2'             => 'required|string',
-                'regno_3'             => 'required|string',
-                'regno_4'             => 'required|string',
+                'reg_no'             => 'required|string',
                 // 'product_code'        => 'required|string',
                 '__finalize'          => 'required|string',
                 'vehicle_type' => 'required|string'
