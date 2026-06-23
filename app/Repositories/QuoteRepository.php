@@ -8,8 +8,8 @@ use App\Models\Insurance\InsurerQuoteResult;
 use \App\Models\Insurance\Quote;
 use \App\Models\Insurance\UsersInsurance;
 use \App\Models\Insurance\QuoteRequest;
+use Illuminate\Support\Facades\Auth;
 use Exception;
-use Override;
 
 class QuoteRepository implements QuoteRepositoryInterface
 {
@@ -57,7 +57,7 @@ class QuoteRepository implements QuoteRepositoryInterface
                 $netPremium = $premiumBreakup['net_premium'] ?? 0;
                 $totalPremium = $premiumBreakup['final_premium'] ?? 0;
                 $vehicleIdv = $resData['pol_dlts']['vehicle_idv'] ?? 0;
-                $userId = auth()->id() ?? request()->attributes->get('merchant_partner')?->user_id;
+                $userId = Auth::id() ?? request()->attributes->get('merchant_partner')?->user_id;
                 Quote::create([
                     'user_id'                       => $userId,
                     'insurer_id'                    => $data['insurer_id'],
@@ -101,6 +101,7 @@ class QuoteRepository implements QuoteRepositoryInterface
                         'model'            => $data['vehicle_model'] ?? null,
                         'trim'             => $data['vehicle_variant'] ?? null,
                         'year'             => $data['man_year'] ?? null,
+                        'registration_no'  => $data['request_payload']['reg_no'] ?? null,
                         'quote_id'         => $resData['quote_id'] ?? null,
                         'quote_no'         => $resData['quote_no'] ?? null,
                         'proposal_id'      => $resData['proposal_id'] ?? null,

@@ -24,4 +24,9 @@ class UsersInsuranceRepository implements UsersInsuranceRepositoryInterface
             $data
         );
     }
+
+    public function findByQuoteId(string $quoteId): ?UsersInsurance
+    {
+        return UsersInsurance::where('quote_id', $quoteId)->first();
+    }
 }

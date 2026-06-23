@@ -35,6 +35,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(\App\Repositories\Interfaces\UsersInsuranceRepositoryInterface::class, \App\Repositories\UsersInsuranceRepository::class);
 
         $this->app->bind(\App\Repositories\Interfaces\InsuranceKycVerificationRepositoryInterface::class, \App\Repositories\InsuranceKycVerificationRepository::class);
+        $this->app->bind(\App\Services\Interfaces\KycServiceInterface::class, \App\Services\KycService::class);
     }
 
     /**

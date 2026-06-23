@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\QuoteController;
 use App\Http\Controllers\vehicleMapping\VehicleMappingController;
 use App\Http\Controllers\Api\ProposalController;
+use \App\Http\Controllers\Api\KycController;
 
 Route::post('/login', [User::class, 'login']);
 Route::post('/google-login', [User::class, 'login']);
@@ -46,6 +47,7 @@ Route::middleware('merchant.api')->group(function () {
     Route::get('/insurance/models', [VehicleMappingController::class, 'getModels']);
     Route::get('/insurance/trims', [VehicleMappingController::class, 'getTrims']);
     Route::post('/insurance/proposal', [ProposalController::class, 'store']);
+    Route::post('/insurance/kyc/verify', [KycController::class, 'verify']);
 });
 
 Route::post('/login', [User::class, 'login']);
