@@ -78,12 +78,12 @@ class Quote extends Model
         return $this->belongsTo(Insurer::class);
     }
 
-    public function proposal() : HasOne
+    public function proposal(): HasOne
     {
-        return $this->hasOne(Proposal::class,'quote_id','insurer_quote_ref');
+        return $this->hasOne(Proposal::class, 'quote_id', 'insurer_quote_ref');
     }
-     public function kyc() : HasOne
+    public function kyc(): HasOne
     {
-        return $this->hasOne(InsuranceKycVerification::class,'quote_id','insurer_quote_ref');
+        return $this->hasOne(InsuranceKycVerification::class, 'quote_id', 'insurer_quote_ref');
     }
 }

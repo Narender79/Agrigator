@@ -53,8 +53,18 @@ class UsersInsurance extends Model
         'aggregator_name',
     ];
 
-    public function quote() : HasOne
+    public function quote(): HasOne
     {
         return $this->hasOne(Quote::class, 'quote_request_session_id', 'insurance_unique_id');
+    }
+
+    public function proposal(): HasOne
+    {
+        return $this->hasOne(Proposal::class, 'quote_id', 'quote_id');
+    }
+
+    public function kyc() : HasOne
+    {
+        return $this->hasOne(InsuranceKycVerification::class,'quote_id','quote_id');
     }
 }
