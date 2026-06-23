@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Quote extends Model
 {
@@ -75,5 +76,14 @@ class Quote extends Model
     public function insurer(): BelongsTo
     {
         return $this->belongsTo(Insurer::class);
+    }
+
+    public function proposal(): HasOne
+    {
+        return $this->hasOne(Proposal::class, 'quote_id', 'insurer_quote_ref');
+    }
+    public function kyc(): HasOne
+    {
+        return $this->hasOne(InsuranceKycVerification::class, 'quote_id', 'insurer_quote_ref');
     }
 }

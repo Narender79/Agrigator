@@ -17,7 +17,9 @@ class AuthenticateMerchantApi
 
         if ($clientId === '' || $clientSecret === '') {
             return response()->json([
-                'message' => 'Merchant credentials are required.',
+                'success' => false,
+                'message' => 'Merchant auth validation error',
+                'errors'  => "Merchant credentials are required",
             ], 401);
         }
 
@@ -29,13 +31,17 @@ class AuthenticateMerchantApi
 
         if (! $credential || ! Hash::check($clientSecret, $credential->api_secret_hash)) {
             return response()->json([
-                'message' => 'Invalid merchant credentials.',
+                'success' => false,
+                'message' => 'Merchant auth validation error',
+                'errors'  => "Invalid merchant credentials.",
             ], 401);
         }
 
         if (! $credential->partner || $credential->partner->status !== 'active') {
             return response()->json([
-                'message' => 'Merchant account is not active.',
+                'success' => false,
+                'message' => 'Merchant auth validation error',
+                'errors'  => "Merchant account is not active.",
             ], 403);
         }
 

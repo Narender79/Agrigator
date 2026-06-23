@@ -8,11 +8,20 @@ use App\Models\Insurance\InsurerQuoteResult;
 use \App\Models\Insurance\Quote;
 use \App\Models\Insurance\UsersInsurance;
 use \App\Models\Insurance\QuoteRequest;
+use App\Models\VehicleHistory;
 use Illuminate\Support\Facades\Auth;
 use Exception;
 
+use function PHPUnit\Framework\throwException;
+
 class QuoteRepository implements QuoteRepositoryInterface
 {
+    public function __construct(
+        private UsersInsurance $userInsModel,
+        private VehicleHistory $vehHisModel,
+        private QuoteRequest $quoteResModel,
+        private QuoteReqRes $quoteReqMongoModel
+    ) {}
     /**
      * Store a new quote request/response locally inside MongoDB.
      *
@@ -159,11 +168,53 @@ class QuoteRepository implements QuoteRepositoryInterface
         }
     }
 
+    public function checkValidQuoteID(string $quoteId): UsersInsurance
+    {
+        return $this->userInsModel->where('quote_id', $quoteId)->first();
+    }
+
+    public function updatePaymentStatus(array $data): UsersInsurance
+    {
+        $insuranceObj =  $this->checkValidQuoteID($data['quote_id']);
+        $insuranceObj->payment_id = $data['payment_id'];
+        $insuranceObj->payment_status = $data['payment_status'];
+        $insuranceObj->droom_payment_id = $data['droom_payment_id'];
+        $insuranceObj->gateway_txn_id = $data['gateway_txn_id'];
+        $insuranceObj->insurance_txn_start_time = now();
+
+        if ($data['payment_status'] == 'success') {
+            $insuranceObj->status = "payment_success";
+        }
+        $insuranceObj->save();
+        return $insuranceObj;
+    }
+
     public function firstOrCreateQuoteRequest(string $sessionId, array $data): QuoteRequest
     {
         return \App\Models\Insurance\QuoteRequest::firstOrCreate(
             ['session_id' => $sessionId],
             $data
         );
+    }
+
+    public function getInsuranceDataByQuoteID(array $payloads): array
+    {
+        $data = $this->userInsModel
+            ->with('proposal', 'kyc')
+            ->where('quote_id', $payloads['quote_id'])
+            ->where('user_id', $payloads['merchant_id'])
+            ->first();
+        if (empty($data)) {
+            return [];
+        }
+        $quoteRespone = $this->quoteReqMongoModel->where('session_id', $data->insurance_unique_id)->latest('_id')->first();
+        $quote_response_payload = [];
+        if(!empty($quoteRespone)){
+            $quote_response_payload = $quoteRespone->insurer_response_payload;
+        }
+        $vehicleInfo = $this->vehHisModel->where('rc_number', $data->registration_no)->latest('_id')->first();
+        $data->quote = $quote_response_payload;
+        $data->vehicleInfo = $vehicleInfo;
+        return $data->toArray();
     }
 }

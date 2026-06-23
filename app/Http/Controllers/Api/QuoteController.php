@@ -103,4 +103,35 @@ class QuoteController extends Controller
             return Response::exeptionResponse($th);
         }
     }
+
+    public function saveQuotePayment(Request $request)
+    {
+        try {
+            $rules = [
+                'insurance_unique_id'           => 'string',
+                'quote_id'          => 'required|string',
+                'droom_payment_id'           => 'required|string',
+                'gateway_txn_id'            => 'required',
+                'payment_status'           => 'required|string',
+                'payment_id'    => 'required|string',
+                'selling_price'    => 'required',
+            ];
+            // Runing validation.
+            $validated = Validator::make($request->all(), $rules);
+            if ($validated->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation error',
+                    'errors'  => $validated->errors()
+                ], 422);
+            }
+            $result = $this->quoteService->updateQuotePaymentStatus($request->all());
+            if (isset($result['success']) && $result['success'] === false) {
+                return Response::failed(data_get($result, 'errors'), 500);
+            }
+            return Response::success(data_get($result, 'data'));
+        } catch (\Exception $e) {
+            return Response::exeptionResponse($e);
+        }
+    }
 }

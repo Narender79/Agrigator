@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\InsuranceController;
 use App\Http\Controllers\Api\InsurerController;
 use App\Http\Controllers\Api\InsurerIntegrationController;
 use App\Http\Controllers\Api\PartnerCredentialController;
@@ -47,7 +48,13 @@ Route::middleware('merchant.api')->group(function () {
     Route::get('/insurance/models', [VehicleMappingController::class, 'getModels']);
     Route::get('/insurance/trims', [VehicleMappingController::class, 'getTrims']);
     Route::post('/insurance/proposal', [ProposalController::class, 'store']);
+    Route::post('/insurance/save-quote-payment', [QuoteController::class, 'saveQuotePayment']);
     Route::post('/insurance/kyc/verify', [KycController::class, 'verify']);
+    Route::prefix('insurance')->group(function () {
+        Route::controller(InsuranceController::class)->group(function () {
+            Route::get("get-quotes/{quoteId}", 'getQuotesByQuoteId');
+        });
+    });
 });
 
 Route::post('/login', [User::class, 'login']);

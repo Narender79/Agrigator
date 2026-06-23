@@ -248,4 +248,49 @@ class QuoteService implements QuoteServiceInterface
             ];
         }
     }
+
+     public function updateQuotePaymentStatus(array $payload): array
+    {
+        try {
+            if(empty($payload['quote_id']) && empty($payload['droom_payment_id']) && empty($payload['gateway_txn_id']) && empty($payload['payment_status']) && empty($payload['payment_id']) && empty($payload['selling_price'])){
+                return [
+                    'success' => false,
+                    'errors' => 'Something missing inyour payload.'
+                ];
+
+            }
+            $getInsuranceObj = $this->quoteRepo->checkValidQuoteID($payload['quote_id']);
+            if($getInsuranceObj->status != 'quote_completed'){
+                return [
+                    'success' => false,
+                    'errors' => 'Your quotation is not finalized.'
+                ];
+            }
+
+            // Check Payable Amount
+            if($getInsuranceObj->net_premium != $payload['selling_price']){
+                return [
+                    'success' => false,
+                    'errors' => 'Payable amount mismatch.'
+                ];
+            }
+
+            $updateData = $this->quoteRepo->updatePaymentStatus($payload);
+            if($updateData->status != "payment_success"){
+                return [
+                    'success' => false,
+                    'errors' => 'Payment status not updated.please try again'
+                ];
+            }
+            return [
+                    'success' => true,
+                    'data' => "Quote payment update sussceefully."
+                ];  
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'errors' => 'An error occurred while fetching insurer quote: ' . $e->getMessage()
+            ];
+        }
+    }
 }

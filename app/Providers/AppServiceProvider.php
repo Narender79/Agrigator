@@ -7,6 +7,8 @@ use App\Repositories\Interfaces\VehicleMappingRepositoryInterface;
 use App\Repositories\VehicleMappingRepository;
 use App\Repositories\Interfaces\QuoteRepositoryInterface;
 use App\Repositories\QuoteRepository;
+use App\Services\InsuranceService;
+use App\Services\Interfaces\InsuranceServiceInterface;
 use App\Services\Interfaces\QuoteServiceInterface;
 use App\Services\QuoteService;
 
@@ -35,6 +37,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(\App\Repositories\Interfaces\UsersInsuranceRepositoryInterface::class, \App\Repositories\UsersInsuranceRepository::class);
 
         $this->app->bind(\App\Repositories\Interfaces\InsuranceKycVerificationRepositoryInterface::class, \App\Repositories\InsuranceKycVerificationRepository::class);
+
+        $this->app->bind(InsuranceServiceInterface::class, InsuranceService::class);
         $this->app->bind(\App\Services\Interfaces\KycServiceInterface::class, \App\Services\KycService::class);
     }
 
