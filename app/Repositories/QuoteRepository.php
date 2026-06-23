@@ -20,6 +20,7 @@ class QuoteRepository implements QuoteRepositoryInterface
         private UsersInsurance $userInsModel,
         private VehicleHistory $vehHisModel,
         private QuoteRequest $quoteResModel,
+        private QuoteReqRes $quoteReqMongoModel
     ) {}
     /**
      * Store a new quote request/response locally inside MongoDB.
@@ -199,14 +200,20 @@ class QuoteRepository implements QuoteRepositoryInterface
     public function getInsuranceDataByQuoteID(array $payloads): array
     {
         $data = $this->userInsModel
-            ->with('quote.proposal', 'quote.kyc')
+            ->with('proposal', 'kyc')
             ->where('quote_id', $payloads['quote_id'])
             ->where('user_id', $payloads['merchant_id'])
             ->first();
         if (empty($data)) {
             return [];
         }
+        $quoteRespone = $this->quoteReqMongoModel->where('session_id', $data->insurance_unique_id)->latest('_id')->first();
+        $quote_response_payload = [];
+        if(!empty($quoteRespone)){
+            $quote_response_payload = $quoteRespone->insurer_response_payload;
+        }
         $vehicleInfo = $this->vehHisModel->where('rc_number', $data->registration_no)->latest('_id')->first();
+        $data->quote = $quote_response_payload;
         $data->vehicleInfo = $vehicleInfo;
         return $data->toArray();
     }
