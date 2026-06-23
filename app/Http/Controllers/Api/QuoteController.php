@@ -70,10 +70,7 @@ class QuoteController extends Controller
             }
             return Response::success($result);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'An error occurred while fetching quotes: ' . $e->getMessage()
-            ], 500);
+            return Response::exeptionResponse($e);
         }
     }
 
