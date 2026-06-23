@@ -57,6 +57,7 @@ class ProposalService implements ProposalServiceInterface
                 'proposer_pincode'             => $payload['pincode'],
                 'quote_no'                     => $payload['quote_no'],
                 'carriedOutBy'                 => 'No',
+                'inspectionFlag'               => 'false',
                 '__finalize'                   => $payload['__finalize'],
             ];
 
@@ -119,6 +120,7 @@ class ProposalService implements ProposalServiceInterface
                     'name'            => trim($payload['first_name'] . ' ' . ($payload['middle_name'] ?? '') . ' ' . $payload['last_name']),
                     'phone'           => $payload['mobile'] ?? null,
                     'status'          => 'proposal_' . $proposalStage,
+                    'insurance_payment_id' => $result['data']['payment_id'] ?? null,
                 ]);
             }
 
