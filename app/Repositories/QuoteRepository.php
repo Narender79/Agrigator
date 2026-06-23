@@ -20,8 +20,7 @@ class QuoteRepository implements QuoteRepositoryInterface
         private UsersInsurance $userInsModel,
         private VehicleHistory $vehHisModel,
         private QuoteRequest $quoteResModel,
-    ) {
-    }
+    ) {}
     /**
      * Store a new quote request/response locally inside MongoDB.
      *
@@ -168,11 +167,13 @@ class QuoteRepository implements QuoteRepositoryInterface
         }
     }
 
-    public function checkValidQuoteID(string $quoteId): UsersInsurance{
+    public function checkValidQuoteID(string $quoteId): UsersInsurance
+    {
         return $this->userInsModel->where('quote_id', $quoteId)->first();
     }
 
-    public function updatePaymentStatus(array $data): UsersInsurance{
+    public function updatePaymentStatus(array $data): UsersInsurance
+    {
         $insuranceObj =  $this->checkValidQuoteID($data['quote_id']);
         $insuranceObj->payment_id = $data['payment_id'];
         $insuranceObj->payment_status = $data['payment_status'];
@@ -180,7 +181,7 @@ class QuoteRepository implements QuoteRepositoryInterface
         $insuranceObj->gateway_txn_id = $data['gateway_txn_id'];
         $insuranceObj->insurance_txn_start_time = now();
 
-        if($data['payment_status'] == 'success'){
+        if ($data['payment_status'] == 'success') {
             $insuranceObj->status = "payment_success";
         }
         $insuranceObj->save();
@@ -198,14 +199,15 @@ class QuoteRepository implements QuoteRepositoryInterface
     public function getInsuranceDataByQuoteID(array $payloads): array
     {
         $data = $this->userInsModel
-            ->with('quote.proposal')
+            ->with('quote.proposal', 'quote.kyc')
             ->where('quote_id', $payloads['quote_id'])
             ->where('user_id', $payloads['merchant_id'])
             ->first();
-
         if (empty($data)) {
             return [];
         }
+        $vehicleInfo = $this->vehHisModel->where('rc_number', $data->registration_no)->latest('_id')->first();
+        $data->vehicleInfo = $vehicleInfo;
         return $data->toArray();
     }
 }
