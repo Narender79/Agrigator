@@ -18,4 +18,5 @@ interface QuoteRepositoryInterface
     public function checkValidQuoteID(string $quoteId): UsersInsurance;
     public function updatePaymentStatus(array $data): UsersInsurance;
     public function firstOrCreateQuoteRequest(string $sessionId, array $data): QuoteRequest;
+    public function getInsuranceDataByQuoteID(array $data): array;
 }

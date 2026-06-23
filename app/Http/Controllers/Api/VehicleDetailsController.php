@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\VehicleHistory;
 use App\Utils\Response;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -140,6 +141,8 @@ class VehicleDetailsController extends Controller
             }
 
             $data2['data']['vehicleData'] = $vehicleData;
+
+            (new VehicleHistory())->createVehicleHistory($rcNumber, $vehicleData);
 
             // Return the successful response back to the user
             return Response::success(

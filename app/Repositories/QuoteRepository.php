@@ -8,13 +8,18 @@ use App\Models\Insurance\InsurerQuoteResult;
 use \App\Models\Insurance\Quote;
 use \App\Models\Insurance\UsersInsurance;
 use \App\Models\Insurance\QuoteRequest;
+use App\Models\VehicleHistory;
 use Exception;
 use Override;
+
+use function PHPUnit\Framework\throwException;
 
 class QuoteRepository implements QuoteRepositoryInterface
 {
     public function __construct(
-        private UsersInsurance $userInsModel
+        private UsersInsurance $userInsModel,
+        private VehicleHistory $vehHisModel,
+        private QuoteRequest $quoteResModel,
     ) {
     }
     /**
@@ -187,5 +192,19 @@ class QuoteRepository implements QuoteRepositoryInterface
             ['session_id' => $sessionId],
             $data
         );
+    }
+
+    public function getInsuranceDataByQuoteID(array $payloads): array
+    {
+        $data = $this->userInsModel
+            ->with('quote.proposal')
+            ->where('quote_id', $payloads['quote_id'])
+            ->where('user_id', $payloads['merchant_id'])
+            ->first();
+
+        if (empty($data)) {
+            return [];
+        }
+        return $data->toArray();
     }
 }

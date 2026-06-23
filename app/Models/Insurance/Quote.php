@@ -76,4 +76,9 @@ class Quote extends Model
     {
         return $this->belongsTo(Insurer::class);
     }
+
+    public function proposal()
+    {
+        return $this->hasOne(Proposal::class,'quote_id','insurer_quote_ref');
+    }
 }

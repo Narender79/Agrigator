@@ -3,6 +3,7 @@
 namespace App\Models\Insurance;
 
 use Illuminate\Database\Eloquent\Model;
+use MongoDB\Laravel\Relations\HasOne;
 
 class UsersInsurance extends Model
 {
@@ -51,4 +52,9 @@ class UsersInsurance extends Model
         'proposal_mail',
         'aggregator_name',
     ];
+
+    public function quote()
+    {
+        return $this->hasOne(Quote::class, 'quote_request_session_id', 'insurance_unique_id');
+    }
 }
