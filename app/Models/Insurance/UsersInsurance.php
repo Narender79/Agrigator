@@ -41,7 +41,7 @@ class UsersInsurance extends Model
         'policy_no',
         'policy_start_date',
         'net_premium',
-        'request_no',
+        'registration_no',
         'policy_url',
         'city',
         'platform',

@@ -11,7 +11,7 @@ class InsuranceKycVerification extends Model
 {
     use HasFactory;
 
-    protected $tabel = 'insurance_kyc_verifications';
+    protected $table = 'insurance_kyc_verifications';
 
     protected $fillable = [
         'user_id',

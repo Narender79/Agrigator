@@ -108,6 +108,27 @@ class QuoteService implements QuoteServiceInterface
             if (empty($payload['business_type']) && !empty($payload['business_type_no'])) {
                 $payload['business_type'] = $payload['business_type_no'] === '01' ? 'New Business' : 'Roll Over';
             }
+            // Parse full registration number into four parts
+            $regNo = strtoupper(str_replace([' ', '-'], '', $payload['reg_no'] ?? ''));
+            $regno_1 = '';
+            $regno_2 = '';
+            $regno_3 = '';
+            $regno_4 = '';
+
+            // Example: HR98W9712 -> regno_1: HR, regno_2: 98, regno_3: W, regno_4: 9712
+            if (preg_match('/^([A-Z]{2})([0-9]{1,2})([A-Z]{0,2})([0-9]{1,4})$/i', $regNo, $matches)) {
+                $regno_1 = $matches[1];
+                $regno_2 = str_pad($matches[2], 2, '0', STR_PAD_LEFT); // Ensures 2 digits (e.g. 4 -> 04)
+                $regno_3 = $matches[3];
+                $regno_4 = $matches[4];
+            }
+
+            // Inject the parts back into the payload for Tata AIG and saving in DB
+            $payload['regno_1'] = $regno_1;
+            $payload['regno_2'] = $regno_2;
+            $payload['regno_3'] = $regno_3;
+            $payload['regno_4'] = $regno_4;
+
 
             // Default values  
             $payload['q_producer_code'] = $payload['q_producer_code'] ?? '4984727878';
