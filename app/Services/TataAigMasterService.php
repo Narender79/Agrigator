@@ -146,12 +146,6 @@ class TataAigMasterService
             if ($response->failed() || $apiStatus !== 200) {
                 Log::error('Tata AIG Quote API Failure', [
                     'status' => $response->status(),
-                    'body' => $response->body()
-                ]);
-            }
-            if ($response->failed() || $apiStatus !== 200) {
-                Log::error('Tata AIG Quote API Failure', [
-                    'status' => $response->status(),
                     'body'   => $response->body()
                 ]);
 
@@ -283,12 +277,12 @@ class TataAigMasterService
 
             if ($response->failed() || ($response['status'] ?? null) !== 200) {
                 Log::error('Tata AIG CKYC API Failure', [
-                    'success' => $response->status(),
+                    'status' => $response->status(),
                     'data' => $response->body()
                 ]);
                 return [
                     'success' => false,
-                    'data' => $response->body()
+                    'data' => $response->json()
                 ];
             }
             return [
@@ -297,8 +291,8 @@ class TataAigMasterService
             ];
         } catch (Exception $e) {
             return [
-                'status' => 500,
-                'message_txt' => 'An error occurred during CKYC verification: ' . $e->getMessage(),
+                'success' => false,
+                'message' => 'An error occurred during CKYC verification: ' . $e->getMessage(),
                 'data' => null
             ];
         }
