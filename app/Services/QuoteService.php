@@ -100,7 +100,7 @@ class QuoteService implements QuoteServiceInterface
                 $payload['vehicle_model_no']   = (int) $modelMapp->insurer_model_id;
                 $payload['vehicle_variant_no'] = (string) $trimMapp->insurer_trim_id;
                 if (isset($payload['man_year'])) {
-                    $payload['man_year'] = (string) $payload['man_year'];
+                    $payload['man_year'] = (int) $payload['man_year'];
                 }
             }
 
