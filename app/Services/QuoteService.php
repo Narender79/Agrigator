@@ -189,7 +189,6 @@ class QuoteService implements QuoteServiceInterface
             unset($payload['make_id'], $payload['model_id'], $payload['trim_id']);
             // \Log::info($payload);
             // 4. Call Tata AIG Master Service directly
-            \Log::info( $payload);
             $response = $this->tataAigService->fetchQuote($payload);
             $status = $response['success'] ? 'success' : 'failed';
             if ($status == 'failed') {

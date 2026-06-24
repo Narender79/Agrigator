@@ -43,7 +43,7 @@ class StorePostQuoteRequest extends FormRequest
             'make_name'          => 'required|string',
             'model_name'         => 'required|string',
             'trim_name'          => 'required|string',
-            'man_year'           => 'required|string',
+            'man_year'           => 'required',
             'place_reg'          => 'required|string',
             'proposer_pincode'   => 'required|string',
             'business_type_no'   => 'required|string',
