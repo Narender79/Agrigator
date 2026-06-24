@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api;
 
+use App\Utils\Response;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -42,7 +43,7 @@ class StorePostQuoteRequest extends FormRequest
             'make_name'          => 'required|string',
             'model_name'         => 'required|string',
             'trim_name'          => 'required|string',
-            'man_year'           => 'required',
+            'man_year'           => 'required|string',
             'place_reg'          => 'required|string',
             'proposer_pincode'   => 'required|string',
             'business_type_no'   => 'required|string',
@@ -67,13 +68,7 @@ class StorePostQuoteRequest extends FormRequest
 
     protected function failedValidation(Validator $validator)
     {
-        throw new HttpResponseException(
-            response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors(),
-            ], 422)
-        );
+        throw new HttpResponseException(Response::validationFailed($validator->errors()));
     }
 
      public function messages(): array

@@ -100,7 +100,7 @@ class QuoteService implements QuoteServiceInterface
                 $payload['vehicle_model_no']   = (int) $modelMapp->insurer_model_id;
                 $payload['vehicle_variant_no'] = (string) $trimMapp->insurer_trim_id;
                 if (isset($payload['man_year'])) {
-                    $payload['man_year'] = (int) $payload['man_year'];
+                    $payload['man_year'] = (string) $payload['man_year'];
                 }
             }
 
@@ -189,6 +189,7 @@ class QuoteService implements QuoteServiceInterface
             unset($payload['make_id'], $payload['model_id'], $payload['trim_id']);
             // \Log::info($payload);
             // 4. Call Tata AIG Master Service directly
+            \Log::info( $payload);
             $response = $this->tataAigService->fetchQuote($payload);
             $status = $response['success'] ? 'success' : 'failed';
             if ($status == 'failed') {
