@@ -19,8 +19,7 @@ class QuoteController extends Controller
         try {
             // Check validation rule
             $validatedData = $request->validated();
-
-            $result = $this->quoteService->getInsurerQuote($validatedData);
+            $result = $this->quoteService->getInsurerQuote($request->all());
 
             if (isset($result['success']) && $result['success'] === false) {
                 return Response::failed(
