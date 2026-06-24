@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\SavePostQuotePaymentRequest;
+use App\Http\Requests\Api\StorePostQuoteRequest;
 use App\Services\Interfaces\QuoteServiceInterface;
 use App\Utils\Response;
 use Illuminate\Http\Request;
@@ -10,64 +12,23 @@ use \Illuminate\Support\Facades\Validator;
 
 class QuoteController extends Controller
 {
-    public function __construct(private readonly QuoteServiceInterface $quoteService)
-    {
-    }
+    public function __construct(private readonly QuoteServiceInterface $quoteService) {}
 
-    public function store(Request $request)
+    public function store(StorePostQuoteRequest $request)
     {
         try {
-            // Defining common required fields for both 2W and 4W
-            $rules = [
-                // 'make_id'             => 'required|integer',
-                // 'model_id'            => 'required|integer',
-                // 'trim_id'             => 'required|integer',
-                'make_name' => 'required|string',
-                'model_name' => 'required|string',
-                'trim_name' => 'required|string',
-                // 'q_producer_code'     => 'required|string',
-                'man_year' => 'required',
-                // 'pol_start_date'      => 'required|date_format:Y-m-d',
-                'place_reg' => 'required|string',
-                // 'proposer_type'       => 'required|string',
-                'proposer_pincode' => 'required|string',
-                'business_type_no' => 'required|string',
-                'dor' => 'required|date_format:Y-m-d',
-                // 'prev_pol_type'       => 'required|string',
-                'claim_last'          => 'required|string',
-                'pre_pol_ncb'         => 'required|string',
-                'reg_no'             => 'required|string',
-                // 'product_code'        => 'required|string',
-                '__finalize' => 'required|string',
-                'vehicle_type' => 'required|string'
-            ];
-
-            // Conditional validation based on vehicle product code
-            if ($request->input('vehicle_type') === '2w') {
-                // 2W specific fields
-                $rules['pol_tenure'] = 'required|string';
-                $rules['plan_type'] = 'required|string';
-                $request->request->set('product_code', '3187');
-            } else {
-                // 4W specific fields
-                $rules['pol_plan_id'] = 'required|string';
-                $rules['motor_plan_opted_no'] = 'required|string';
-                $request->request->set('pol_plan_variant', 'PackagePolicy');
-                $request->request->set('product_code', '3184');
-            }
-            // Runing validation.
-            $validated = Validator::make($request->all(), $rules);
-            if ($validated->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation error',
-                    'errors' => $validated->errors()
-                ], 422);
-            }
+            // Check validation rule
+            $validatedData = $request->validated();
             $result = $this->quoteService->getInsurerQuote($request->all());
+
             if (isset($result['success']) && $result['success'] === false) {
-                return Response::failed(data_get($result, 'errors'), 500, array('data' => $result));
+                return Response::failed(
+                    data_get($result, 'errors'),
+                    500,
+                    ['data' => $result]
+                );
             }
+
             return Response::success($result);
         } catch (\Exception $e) {
             return Response::exeptionResponse($e);
@@ -104,31 +65,21 @@ class QuoteController extends Controller
         }
     }
 
-    public function saveQuotePayment(Request $request)
+    public function saveQuotePayment(SavePostQuotePaymentRequest $request)
     {
         try {
-            $rules = [
-                'insurance_unique_id'           => 'string',
-                'quote_id'          => 'required|string',
-                'droom_payment_id'           => 'required|string',
-                'gateway_txn_id'            => 'required',
-                'payment_status'           => 'required|string',
-                'payment_id'    => 'required|string',
-                'selling_price'    => 'required',
-            ];
-            // Runing validation.
-            $validated = Validator::make($request->all(), $rules);
-            if ($validated->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation error',
-                    'errors'  => $validated->errors()
-                ], 422);
-            }
-            $result = $this->quoteService->updateQuotePaymentStatus($request->all());
+            // Check validation rule
+            $validatedData = $request->validated();
+
+            $result = $this->quoteService->updateQuotePaymentStatus($validatedData);
+
             if (isset($result['success']) && $result['success'] === false) {
-                return Response::failed(data_get($result, 'errors'), 500);
+                return Response::failed(
+                    data_get($result, 'errors'),
+                    500
+                );
             }
+
             return Response::success(data_get($result, 'data'));
         } catch (\Exception $e) {
             return Response::exeptionResponse($e);

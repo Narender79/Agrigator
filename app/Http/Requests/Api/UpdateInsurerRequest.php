@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Api;
 
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Validation\Rule;
 
 class UpdateInsurerRequest extends FormRequest
@@ -55,5 +57,16 @@ class UpdateInsurerRequest extends FormRequest
             'regulatory_reg_no.unique' => 'An insurer with this regulatory registration number already exists.',
             'status.in' => 'The status field must be either active or inactive.',
         ];
+    }
+
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(
+            response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors(),
+            ], 422)
+        );
     }
 }

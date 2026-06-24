@@ -57,6 +57,7 @@ class Response
         return response()->json([
             'code' => self::CODE_FAILED,
             'error_code' => $code,
+            'message' => 'Validation error',
             'errors' => $errors,
         ], $status);
     }
