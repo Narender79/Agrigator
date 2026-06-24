@@ -33,10 +33,7 @@ class QuoteService implements QuoteServiceInterface
             $insurer = $this->insurerRepo->getActiveByName('TATA AIG GENERAL INSURANCE');
 
             if (!$insurer || $insurer->status !== 'active') {
-                return [
-                    'success' => false,
-                    'message' => 'Insurer is not active or available.'
-                ];
+                throw new Exception("Insurer is not active or available.");
             }
 
             // finding the droom make_id from make name
@@ -45,10 +42,7 @@ class QuoteService implements QuoteServiceInterface
             $trimObj = $this->vehicleMappingRepo->findTrimByName($payload['trim_name'] ?? null);
 
             if (!$makeObj || !$modelObj || !$trimObj) {
-                return [
-                    'success' => false,
-                    'message' => 'Unable to find Make name , Model name, Trim name.'
-                ];
+                throw new Exception("Unable to find Make name , Model name, Trim name.");
             }
             // \Log::info($payload);
             // 2. Fetch mapping details using Droom IDs
@@ -58,10 +52,7 @@ class QuoteService implements QuoteServiceInterface
 
             // If no mapping is found for the selected vehicle, return a clear mapping error
             if (!$makeMapp || !$modelMapp || !$trimMapp) {
-                return [
-                    'success' => false,
-                    'message' => 'The selected vehicle details are not mapped for this insurer.'
-                ];
+                throw new Exception("The selected vehicle details are not mapped for this insurer.");
             }
 
             // Generate or capture quote request session ID
@@ -244,7 +235,7 @@ class QuoteService implements QuoteServiceInterface
             // ]);
             return [
                 'success' => false,
-                'message' => 'An error occurred while fetching insurer quote: ' . $e->getMessage()
+                'errors' => $e->getMessage()
             ];
         }
     }
