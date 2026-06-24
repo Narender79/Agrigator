@@ -17,6 +17,8 @@ class ModelMapping extends Model
         'dr_make_id',
         'dr_model_id',
         'logo_path',
+        'vehicle_type',
+        'insurer_make_id',
         'insurer_model_id',
         'insurer_model_name',
         'status',

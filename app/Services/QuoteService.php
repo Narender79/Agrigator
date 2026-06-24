@@ -178,7 +178,7 @@ class QuoteService implements QuoteServiceInterface
             $payload['event_from_date']            = $payload['event_from_date'] ?? '';
             $payload['event_to_date']              = $payload['event_to_date'] ?? '';
             $payload['loss_accessories_idv']       = $payload['loss_accessories_idv'] ?? '';
-            $payload['place_reg_no']               = $payload['place_reg_no'] ?? '101';
+            $payload['place_reg_no']               = $payload['place_reg_no'];
             $payload['q_producer_email']           = $payload['q_producer_email'] ?? 'pi_uat@tataaig.com';
             $payload['uw_loading']                 = $payload['uw_loading'] ?? '';
             $payload['uw_discount']                = $payload['uw_discount'] ?? '';
@@ -187,7 +187,7 @@ class QuoteService implements QuoteServiceInterface
 
             // Remove Droom-specific IDs before sending to Tata AIG
             unset($payload['make_id'], $payload['model_id'], $payload['trim_id']);
-            // \Log::info($payload);
+            \Log::info($payload);
             // 4. Call Tata AIG Master Service directly
             $response = $this->tataAigService->fetchQuote($payload);
             $status = $response['success'] ? 'success' : 'failed';
@@ -249,18 +249,17 @@ class QuoteService implements QuoteServiceInterface
         }
     }
 
-     public function updateQuotePaymentStatus(array $payload): array
+    public function updateQuotePaymentStatus(array $payload): array
     {
         try {
-            if(empty($payload['quote_id']) && empty($payload['droom_payment_id']) && empty($payload['gateway_txn_id']) && empty($payload['payment_status']) && empty($payload['payment_id']) && empty($payload['selling_price'])){
+            if (empty($payload['quote_id']) && empty($payload['droom_payment_id']) && empty($payload['gateway_txn_id']) && empty($payload['payment_status']) && empty($payload['payment_id']) && empty($payload['selling_price'])) {
                 return [
                     'success' => false,
                     'errors' => 'Something missing inyour payload.'
                 ];
-
             }
             $getInsuranceObj = $this->quoteRepo->checkValidQuoteID($payload['quote_id']);
-            if($getInsuranceObj->status != 'quote_completed'){
+            if ($getInsuranceObj->status != 'quote_completed') {
                 return [
                     'success' => false,
                     'errors' => 'Your quotation is not finalized.'
@@ -268,7 +267,7 @@ class QuoteService implements QuoteServiceInterface
             }
 
             // Check Payable Amount
-            if($getInsuranceObj->net_premium != $payload['selling_price']){
+            if ($getInsuranceObj->net_premium != $payload['selling_price']) {
                 return [
                     'success' => false,
                     'errors' => 'Payable amount mismatch.'
@@ -276,16 +275,16 @@ class QuoteService implements QuoteServiceInterface
             }
 
             $updateData = $this->quoteRepo->updatePaymentStatus($payload);
-            if($updateData->status != "payment_success"){
+            if ($updateData->status != "payment_success") {
                 return [
                     'success' => false,
                     'errors' => 'Payment status not updated.please try again'
                 ];
             }
             return [
-                    'success' => true,
-                    'data' => "Quote payment update sussceefully."
-                ];  
+                'success' => true,
+                'data' => "Quote payment update sussceefully."
+            ];
         } catch (Exception $e) {
             return [
                 'success' => false,

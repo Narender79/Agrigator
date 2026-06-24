@@ -38,38 +38,30 @@ class VehicleMappingRepository implements VehicleMappingRepositoryInterface
     public function getMakes(): Collection
     {
         // Return makes from Make table that have active mappings
-        $makes = $this->make
-            ->join('make_mapping', 'make.id', '=', 'make_mapping.dr_make_id')
-            ->where('make_mapping.status', 'active')
+        return $this->makeMapping
+            ->where('status', 'active')
             ->distinct()
-            ->get(['make.id', 'make.make_name']);
-
-        return $makes;
+            ->get(['insurer_make_id', 'insurer_make_name']);
     }
 
     public function getModelsByMake(?string $makeCode): Collection
     {
         // Return models from VehicleModel table that are mapped for the given make_id
-        $models = $this->model
-            ->join('model_mapping', 'model.id', '=', 'model_mapping.dr_model_id')
-            ->where('model.make_id', $makeCode)
-            ->where('model_mapping.status', 'active')
+        return $this->modelMapping
+            ->where('insurer_make_id', $makeCode)
+            ->where('status', 'active')
             ->distinct()
-            ->get(['model.id', 'model.model_name']);
-        return $models;
+            ->get(['insurer_model_id', 'insurer_model_name']);
     }
 
     public function getTrimsByModel(?string $modelCode): Collection
     {
         // Return trims from Trim table that are mapped for the given model_id
-        $trims = $this->trim
-            ->join('trim_mapping', 'trim.id', '=', 'trim_mapping.dr_trim_id')
-            ->where('trim.model_id', $modelCode)
-            ->where('trim_mapping.status', 'active')
+        return $this->trimMapping
+            ->where('insurer_model_id', $modelCode)
+            ->where('status', 'active')
             ->distinct()
-            ->get(['trim.id', 'trim.trim_name']);
-
-        return $trims;
+            ->get(['insurer_trim_id', 'insurer_trim_name']);
     }
 
     public function findMakeByName(?string $name): ?Make

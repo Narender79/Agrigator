@@ -297,4 +297,46 @@ class TataAigMasterService
             ];
         }
     }
+
+    /**
+     * Send payment verification request to Tata AIG.
+     */
+
+    public function verifyPayment(array $payload): array
+    {
+        try {
+
+            $token = $this->getAccessToken();
+            $path = '/payment/online_response?product=Motor';
+            $url = rtrim($this->baseUrl, '/') . $path;
+
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $token,
+                'x-api-key' => $this->apiKey,
+                'Content-Type' => 'application/json'
+            ])->timeout($this->timeout)->post($url, $payload);
+
+            if ($response->failed() || ($response['status'] !== 200)) {
+                Log::error('Tata AIG Payment Verification API Failure', [
+                    'status' => $response->status(),
+                    'body' => $response->body()
+                ]);
+                return [
+                    'success' => false,
+                    'data' => $response->json()
+                ];
+            }
+
+            return [
+                'success' => true,
+                'data' => $response['data']
+            ];
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'An error occurred during payment verification: ' . $e->getMessage(),
+                'data' => null
+            ];
+        }
+    }
 }

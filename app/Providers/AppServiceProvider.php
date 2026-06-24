@@ -40,6 +40,7 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->bind(InsuranceServiceInterface::class, InsuranceService::class);
         $this->app->bind(\App\Services\Interfaces\KycServiceInterface::class, \App\Services\KycService::class);
+        $this->app->bind(\App\Services\Interfaces\PaymentServiceInterface::class, \App\Services\PaymentService::class);
     }
 
     /**

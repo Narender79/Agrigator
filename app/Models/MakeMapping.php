@@ -19,6 +19,7 @@ class MakeMapping extends Model
         'logo_path',
         'status',
         'is_popular',
+        'vehicle_type',
         'created_by',
         'updated_by',
     ];

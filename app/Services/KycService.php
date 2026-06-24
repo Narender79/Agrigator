@@ -6,7 +6,9 @@ use App\Services\Interfaces\KycServiceInterface;
 use App\Services\TataAigMasterService;
 use App\Repositories\Interfaces\UsersInsuranceRepositoryInterface;
 use App\Repositories\Interfaces\InsuranceKycVerificationRepositoryInterface;
+use \App\Services\Interfaces\PaymentServiceInterface;
 use Illuminate\Support\Facades\Auth;
+use \Illuminate\Support\Facades\Log;
 use Exception;
 
 class KycService implements KycServiceInterface
@@ -14,7 +16,8 @@ class KycService implements KycServiceInterface
     public function __construct(
         private readonly TataAigMasterService $tataAigService,
         private readonly UsersInsuranceRepositoryInterface $userInsuranceRepo,
-        private readonly InsuranceKycVerificationRepositoryInterface $kycVerificationRepo
+        private readonly InsuranceKycVerificationRepositoryInterface $kycVerificationRepo,
+        private readonly PaymentServiceInterface $paymentService
     ) {}
 
     public function verifyKyc(array $payload): array
@@ -88,6 +91,14 @@ class KycService implements KycServiceInterface
                 'status' => 'kyc_completed',
             ]);
 
+            // Call the unified payment verification service
+            $paymentResponse = $this->paymentService->verifyInsurerPayment($record);
+            if (!$paymentResponse['success']) {
+                Log::error('Insurer payment verification failed at KYC stage', [
+                    'session_id' => $record->insurance_unique_id,
+                    'response'   => $paymentResponse
+                ]);
+            }
             return [
                 'success' => true,
                 'data' => $response['data'] // return the whole insurer response JSON
