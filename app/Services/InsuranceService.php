@@ -11,8 +11,12 @@ class InsuranceService implements InsuranceServiceInterface
     public function __construct(private QuoteRepositoryInterface $quoteRepo) {
     }
 
-    public function getQuoteByQuoteId(array $payloads): array
+    public function getQuoteByQuoteId(string $quoteId): array
     {
-        return $this->quoteRepo->getInsuranceDataByQuoteID($payloads);
+        $user_id = request()->attributes->get('merchant_partner')->user_id;
+        return $this->quoteRepo->getInsuranceDataByQuoteID([
+                "quote_id" => $quoteId,
+                "merchant_id" => $user_id
+            ]);
     }
 }

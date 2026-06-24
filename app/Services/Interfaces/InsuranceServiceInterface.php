@@ -4,5 +4,5 @@ namespace App\Services\Interfaces;
 
 interface InsuranceServiceInterface
 {
-    public function getQuoteByQuoteId(array $payload): array;
+    public function getQuoteByQuoteId(string $quoteId): array;
 }

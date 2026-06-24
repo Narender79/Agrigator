@@ -17,10 +17,7 @@ class InsuranceController extends Controller
     {
         try {
             $user_id = request()->attributes->get('merchant_partner')->user_id;
-            $result = $this->insuranceService->getQuoteByQuoteId([
-                "quote_id" => $quoteId,
-                "merchant_id" => $user_id
-            ]);
+            $result = $this->insuranceService->getQuoteByQuoteId($quoteId);
             return Response::success($result);
         } catch (\Exception $e) {
            return Response::exeptionResponse($e);
