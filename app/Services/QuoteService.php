@@ -2,16 +2,15 @@
 
 namespace App\Services;
 
+use App\Exceptions\BusinessException;
+use App\Exceptions\ValidationExceptions;
 use App\Services\Interfaces\QuoteServiceInterface;
 use App\Repositories\Interfaces\QuoteRepositoryInterface;
 use App\Services\TataAigMasterService;
 use App\Repositories\Interfaces\InsurerRepositoryInterface;
 use App\Repositories\Interfaces\VehicleMappingRepositoryInterface;
 use \App\Utils\Logger;
-
-use Illuminate\Support\Facades\Log;
 use Exception;
-use Predis\Command\Argument\Search\SchemaFields\VectorField;
 
 class QuoteService implements QuoteServiceInterface
 {
@@ -326,59 +325,42 @@ class QuoteService implements QuoteServiceInterface
 
     public function updateQuotePaymentStatus(array $payload): array
     {
-        try {
-            if (empty($payload['quote_id']) && empty($payload['droom_payment_id']) && empty($payload['gateway_txn_id']) && empty($payload['payment_status']) && empty($payload['payment_id']) && empty($payload['selling_price'])) {
-                $msg = 'Something missing in your payload.';
-                Logger::logException($msg, 400, ['payload' => $payload]);
-                return [
-                    'success' => false,
-                    'errors' => $msg,
-                    'status_code' => 400
-                ];
-            }
-            $getInsuranceObj = $this->quoteRepo->checkValidQuoteID($payload['quote_id']);
-            if ($getInsuranceObj->status != 'quote_completed') {
-                $msg = 'Your quotation is not finalized.';
-                Logger::logException($msg, 400, ['payload' => $payload]);
-                return [
-                    'success' => false,
-                    'errors' => $msg,
-                    'status_code' => 400
-                ];
-            }
-
-            // Check Payable Amount
-            if ($getInsuranceObj->net_premium != $payload['selling_price']) {
-                $msg = 'Payable amount mismatch.';
-                Logger::logException($msg, 400, ['payload' => $payload]);
-                return [
-                    'success' => false,
-                    'errors' => $msg,
-                    'status_code' => 400
-                ];
-            }
-
-            $updateData = $this->quoteRepo->updatePaymentStatus($payload);
-            if ($updateData->status != "payment_success") {
-                $msg = 'Payment status not updated. Please try again.';
-                Logger::logException($msg, 500, ['payload' => $payload]);
-                return [
-                    'success' => false,
-                    'errors' => $msg,
-                    'status_code' => 500
-                ];
-            }
-            return [
-                'success' => true,
-                'data' => "Quote payment update sussceefully."
-            ];
-        } catch (Exception $e) {
-            Logger::logException($e);
-            return [
-                'success' => false,
-                'errors' => $e->getMessage(),
-                'status_code' => 500
-            ];
+        if (
+            empty($payload['quote_id']) ||
+            empty($payload['droom_payment_id']) ||
+            empty($payload['gateway_txn_id']) ||
+            empty($payload['payment_status']) ||
+            empty($payload['payment_id']) ||
+            empty($payload['selling_price'])
+        ) {
+            throw new ValidationExceptions('Something missing in your payload.');
         }
+        $getInsuranceObj = $this->quoteRepo->checkValidQuoteID($payload['quote_id']);
+        if ($getInsuranceObj->status != 'quote_completed') {
+            throw new BusinessException(
+                'Your quotation is not finalized.',
+                400
+            );
+        }
+
+        // Check Payable Amount
+        if ($getInsuranceObj->net_premium != $payload['selling_price']) {
+            throw new BusinessException(
+                'Payable amount mismatch.',
+                400
+            );
+        }
+
+        $updateData = $this->quoteRepo->updatePaymentStatus($payload);
+        if ($updateData->status != "payment_success") {
+            throw new BusinessException(
+                'Payment status not updated. Please try again.',
+                500
+            );
+        }
+        return [
+            'success' => true,
+            'data' => "Quote payment update sussceefully."
+        ];
     }
 }
