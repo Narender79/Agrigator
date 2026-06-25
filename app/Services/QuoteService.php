@@ -83,9 +83,9 @@ class QuoteService implements QuoteServiceInterface
             // Store the quote request session in SQL
             $this->quoteRepo->firstOrCreateQuoteRequest($sessionId, [
                 'vehicle_data' => [
-                    'make_name'  => $payload['make_name'],
-                    'model_name' => $payload['model_name'],
-                    'trim_name'  => $payload['trim_name'],
+                    'make_name'  => $makeName,
+                    'model_name' => $modelName,
+                    'trim_name'  => $variantName,
                     'man_year' => $payload['man_year'] ?? null,
                 ],
                 'status' => 'complete',
@@ -172,7 +172,7 @@ class QuoteService implements QuoteServiceInterface
             $payload['event_from_date']            = $payload['event_from_date'] ?? '';
             $payload['event_to_date']              = $payload['event_to_date'] ?? '';
             $payload['loss_accessories_idv']       = $payload['loss_accessories_idv'] ?? '';
-            $payload['place_reg_no']               = $payload['place_reg_no'];
+            // $payload['place_reg_no']               = $payload['place_reg_no'];
             $payload['q_producer_email']           = $payload['q_producer_email'] ?? 'pi_uat@tataaig.com';
             $payload['uw_loading']                 = $payload['uw_loading'] ?? '';
             $payload['uw_discount']                = $payload['uw_discount'] ?? '';
@@ -211,7 +211,7 @@ class QuoteService implements QuoteServiceInterface
             ]);
             // die();
             // Check the category_id from the model mapping to determine 4w vs 2w dynamically
-            $vehicleType = ($modelMapp && $modelMapp->category_id == 81) ? '4w' : '2w';
+            $vehicleType = $payload['vehicle_type'] ?? '4w';
             $result['available_options'] = [
                 'policy_plans' => config("insurance_masters.policy_plans.{$vehicleType}", []),
                 'motor_plans'  => config("insurance_masters.motor_plans.{$vehicleType}", []),
