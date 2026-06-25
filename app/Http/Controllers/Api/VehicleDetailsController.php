@@ -184,16 +184,7 @@ class VehicleDetailsController extends Controller
                 ]
             );
         } catch (\Throwable $th) {
-            Log::error('Exception in VehicleDetailsController', [
-                'message' => $th->getMessage(),
-                'trace' => $th->getTraceAsString(),
-            ]);
-            return Response::failed(
-                'Internal server error.',
-                500,
-                ['message' => $th->getMessage()],
-                500
-            );
+            return Response::exeptionResponse($th);
         }
     }
 }

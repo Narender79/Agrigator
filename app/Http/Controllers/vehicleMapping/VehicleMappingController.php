@@ -4,9 +4,9 @@ namespace App\Http\Controllers\vehicleMapping;
 
 use App\Http\Controllers\Controller;
 use App\Services\VehicleMappingService;
+use App\Utils\Response;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Log;
 use Exception;
 
 class VehicleMappingController extends Controller
@@ -27,18 +27,9 @@ class VehicleMappingController extends Controller
     public function getMakes2w(): JsonResponse
     {
         try {
-            $makes = $this->mappingService->getFormattedMakes('2w');
-
-            return response()->json([
-                'success' => true,
-                'data'    => $makes
-            ]);
+            return Response::success($this->mappingService->getFormattedMakes('2w'));
         } catch (Exception $e) {
-            Log::error('Failed to fetch 2w makes: ' . $e->getMessage(), ['exception' => $e]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to fetch vehicle makes.'
-            ], 500);
+            return Response::exeptionResponse($e);
         }
     }
 
@@ -48,18 +39,9 @@ class VehicleMappingController extends Controller
     public function getMakes4w(): JsonResponse
     {
         try {
-            $makes = $this->mappingService->getFormattedMakes('4w');
-
-            return response()->json([
-                'success' => true,
-                'data'    => $makes
-            ]);
+            return Response::success($this->mappingService->getFormattedMakes('4w'));
         } catch (Exception $e) {
-            Log::error('Failed to fetch 4w makes: ' . $e->getMessage(), ['exception' => $e]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to fetch vehicle makes.'
-            ], 500);
+            return Response::exeptionResponse($e);
         }
     }
     /**
@@ -71,24 +53,12 @@ class VehicleMappingController extends Controller
             $makeCode = $request->query('make_code');
 
             if (!$makeCode) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Please provide either make_code or make_name.'
-                ], 400);
+                return Response::validationFailed('Make Code is Required');
             }
 
-            $models = $this->mappingService->getFormattedModels($makeCode);
-
-            return response()->json([
-                'success' => true,
-                'data'    => $models
-            ]);
+            return Response::success($this->mappingService->getFormattedModels($makeCode));
         } catch (Exception $e) {
-            Log::error('Failed to fetch models: ' . $e->getMessage(), ['exception' => $e]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to fetch vehicle models.'
-            ], 500);
+            return Response::exeptionResponse($e);
         }
     }
 
@@ -101,24 +71,12 @@ class VehicleMappingController extends Controller
             $modelCode = $request->query('model_code');
 
             if (!$modelCode) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Please provide either model_code or model_name.'
-                ], 400);
+                return Response::validationFailed('Model Code is Required');
             }
 
-            $trims = $this->mappingService->getFormattedTrims($modelCode);
-
-            return response()->json([
-                'success' => true,
-                'data'    => $trims
-            ]);
+            return Response::success($this->mappingService->getFormattedTrims($modelCode));
         } catch (Exception $e) {
-            Log::error('Failed to fetch trims: ' . $e->getMessage(), ['exception' => $e]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to fetch vehicle trims.'
-            ], 500);
+            return Response::exeptionResponse($e);
         }
     }
 }
