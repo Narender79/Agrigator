@@ -40,9 +40,12 @@ class StorePostQuoteRequest extends FormRequest
     public function rules(): array
     {
         $rules = [
-            'make_name'          => 'required|string',
-            'model_name'         => 'required|string',
-            'trim_name'          => 'required|string',
+            'insurer_make_name'  => 'required|string',
+            'insurer_model_name' => 'required|string',
+            'insurer_trim_name'  => 'required|string',
+            'insurer_make_id'    => 'required|string',
+            'insurer_model_id'   => 'required|string',
+            'insurer_trim_id'    => 'required|string',
             'man_year'           => 'required',
             'place_reg'          => 'required|string',
             'proposer_pincode'   => 'required|string',
