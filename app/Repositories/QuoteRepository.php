@@ -212,7 +212,7 @@ class QuoteRepository implements QuoteRepositoryInterface
         if(!empty($quoteRespone)){
             $quote_response_payload = $quoteRespone->insurer_response_payload;
         }
-        $vehicleInfo = $this->vehHisModel->where('rc_number', $data->registration_no)->latest('_id')->first();
+        $vehicleInfo = $this->vehHisModel->where('rc_number', strtolower($data->registration_no))->latest('_id')->first();
         $data->quote = $quote_response_payload;
         $data->vehicleInfo = $vehicleInfo;
         return $data->toArray();

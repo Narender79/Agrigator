@@ -11,7 +11,7 @@ class VehicleHistory extends Model
 
 
     public function createVehicleHistory($rc_number, $data){
-        $this->rc_number = $rc_number;
+        $this->rc_number = strtolower($rc_number);
         $this->response = $data;
         $this->save();
     }
