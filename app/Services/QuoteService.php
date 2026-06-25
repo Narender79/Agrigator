@@ -43,32 +43,7 @@ class QuoteService implements QuoteServiceInterface
             $makeName    = $payload['insurer_make_name'] ?? $payload['make_name'] ?? null;
             $modelName   = $payload['insurer_model_name'] ?? $payload['model_name'] ?? null;
             $variantName = $payload['insurer_trim_name'] ?? $payload['trim_name'] ?? null;
-            // If the mapping IDs are missing or null, reject the request
-            if (empty($makeCode) || empty($modelCode) || empty($variantCode)) {
-                return [
-                    'success' => false,
-                    'message' => 'The selected vehicle details are not mapped for this insurer.'
-                ];
-            }
-            // finding the droom make_id from make name
-            $makeObj = $this->vehicleMappingRepo->findMakeByName($payload['make_name'] ?? null);
-            $modelObj = $this->vehicleMappingRepo->findModelByName($payload['model_name'] ?? null);
-            $trimObj = $this->vehicleMappingRepo->findTrimByName($payload['trim_name'] ?? null);
-
-            if (!$makeObj || !$modelObj || !$trimObj) {
-                throw new Exception("Unable to find Make name , Model name, Trim name.");
-            }
-            // \Log::info($payload);
-            // 2. Fetch mapping details using Droom IDs
-            $makeMapp = $this->vehicleMappingRepo->findMakeMapping($insurer->id, $makeObj->id ?? null);
-            $modelMapp = $this->vehicleMappingRepo->findModelMapping($insurer->id, $modelObj->id ?? null);
-            $trimMapp = $this->vehicleMappingRepo->findTrimMapping($insurer->id, $trimObj->id ?? null);
-
-            // If no mapping is found for the selected vehicle, return a clear mapping error
-            if (!$makeMapp || !$modelMapp || !$trimMapp) {
-                throw new Exception("The selected vehicle details are not mapped for this insurer.");
-            }
-            // Inject carrier-specific nomenclature and codes into the payload
+            
             $payload['vehicle_make']       = $makeName;
             $payload['vehicle_model']      = $modelName;
             $payload['vehicle_variant']    = $variantName;
@@ -96,9 +71,9 @@ class QuoteService implements QuoteServiceInterface
             // Store the quote request session in SQL
             $this->quoteRepo->firstOrCreateQuoteRequest($sessionId, [
                 'vehicle_data' => [
-                    'make_name'  => $payload['make_name'],
-                    'model_name' => $payload['model_name'],
-                    'trim_name'  => $payload['trim_name'],
+                    'make_name'  => $makeName,
+                    'model_name' => $modelName,
+                    'trim_name'  => $variantName,
                     'man_year' => $payload['man_year'] ?? null,
                 ],
                 'status' => 'complete',
@@ -185,7 +160,7 @@ class QuoteService implements QuoteServiceInterface
             $payload['event_from_date']            = $payload['event_from_date'] ?? '';
             $payload['event_to_date']              = $payload['event_to_date'] ?? '';
             $payload['loss_accessories_idv']       = $payload['loss_accessories_idv'] ?? '';
-            $payload['place_reg_no']               = $payload['place_reg_no'];
+            // $payload['place_reg_no']               = $payload['place_reg_no'];
             $payload['q_producer_email']           = $payload['q_producer_email'] ?? 'pi_uat@tataaig.com';
             $payload['uw_loading']                 = $payload['uw_loading'] ?? '';
             $payload['uw_discount']                = $payload['uw_discount'] ?? '';
@@ -224,7 +199,7 @@ class QuoteService implements QuoteServiceInterface
             ]);
             // die();
             // Check the category_id from the model mapping to determine 4w vs 2w dynamically
-            $vehicleType = ($modelMapp && $modelMapp->category_id == 81) ? '4w' : '2w';
+            $vehicleType = $payload['vehicle_type'] ?? '4w';
             $result['available_options'] = [
                 'policy_plans' => config("insurance_masters.policy_plans.{$vehicleType}", []),
                 'motor_plans'  => config("insurance_masters.motor_plans.{$vehicleType}", []),
