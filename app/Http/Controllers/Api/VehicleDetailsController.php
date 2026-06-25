@@ -58,7 +58,6 @@ class VehicleDetailsController extends Controller
             }
 
             Log::info('Fetching vehicle RC details', ['rc_number' => $rcNumber]);
-
             // Call DSS Vehicle RC Details API (Curl 1)
             $response1 = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $dTkn,

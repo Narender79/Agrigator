@@ -7,6 +7,7 @@ use App\Repositories\Interfaces\QuoteRepositoryInterface;
 use App\Services\TataAigMasterService;
 use App\Repositories\Interfaces\InsurerRepositoryInterface;
 use App\Repositories\Interfaces\VehicleMappingRepositoryInterface;
+use \App\Utils\Logger;
 
 use Illuminate\Support\Facades\Log;
 use Exception;
@@ -47,9 +48,12 @@ class QuoteService implements QuoteServiceInterface
 
             // If the mapping IDs are missing or null, reject the request
             if (empty($makeCode) || empty($modelCode) || empty($variantCode)) {
+                $msg = 'The selected vehicle details are not mapped for this insurer.';
+                Logger::logException($msg, 400, ['payload' => $payload]);
                 return [
                     'success' => false,
-                    'message' => 'The selected vehicle details are not mapped for this insurer.'
+                    'errors' => $msg,
+                    'status_code' => 400
                 ];
             }
 
@@ -251,7 +255,21 @@ class QuoteService implements QuoteServiceInterface
             $response = $this->tataAigService->fetchQuote($payload);
             $status = $response['success'] ? 'success' : 'failed';
             if ($status == 'failed') {
-                return $response;
+                $errorMessage = $response['message'] ?? 'Failed to retrieve quote from Tata AIG.';
+                if (isset($response['errors']['message_txt'])) {
+                    $errorMessage .= ' - ' . $response['errors']['message_txt'];
+                }
+
+                // Write to insure_error.log and insure_detail_error.log
+                Logger::logException($errorMessage, 400, [
+                    'payload' => $payload,
+                    'response' => $response
+                ]);
+                return [
+                    'success' => false,
+                    'errors' => $response['errors'] ?? $errorMessage,
+                    'status_code' => 400
+                ];
             }
             // die();
             $result = $response['data'];
@@ -297,13 +315,11 @@ class QuoteService implements QuoteServiceInterface
             $result['session_id'] = $sessionId;
             return $result;
         } catch (Exception $e) {
-            // Log::error('Error fetching quote in QuoteService: ' . $e->getMessage(), [
-            //     'payload' => $payload,
-            //     'exception' => $e
-            // ]);
+            Logger::logException($e);
             return [
                 'success' => false,
-                'errors' => $e->getMessage()
+                'errors' => $e->getMessage(),
+                'status_code' => 500
             ];
         }
     }
@@ -312,32 +328,44 @@ class QuoteService implements QuoteServiceInterface
     {
         try {
             if (empty($payload['quote_id']) && empty($payload['droom_payment_id']) && empty($payload['gateway_txn_id']) && empty($payload['payment_status']) && empty($payload['payment_id']) && empty($payload['selling_price'])) {
+                $msg = 'Something missing in your payload.';
+                Logger::logException($msg, 400, ['payload' => $payload]);
                 return [
                     'success' => false,
-                    'errors' => 'Something missing inyour payload.'
+                    'errors' => $msg,
+                    'status_code' => 400
                 ];
             }
             $getInsuranceObj = $this->quoteRepo->checkValidQuoteID($payload['quote_id']);
             if ($getInsuranceObj->status != 'quote_completed') {
+                $msg = 'Your quotation is not finalized.';
+                Logger::logException($msg, 400, ['payload' => $payload]);
                 return [
                     'success' => false,
-                    'errors' => 'Your quotation is not finalized.'
+                    'errors' => $msg,
+                    'status_code' => 400
                 ];
             }
 
             // Check Payable Amount
             if ($getInsuranceObj->net_premium != $payload['selling_price']) {
+                $msg = 'Payable amount mismatch.';
+                Logger::logException($msg, 400, ['payload' => $payload]);
                 return [
                     'success' => false,
-                    'errors' => 'Payable amount mismatch.'
+                    'errors' => $msg,
+                    'status_code' => 400
                 ];
             }
 
             $updateData = $this->quoteRepo->updatePaymentStatus($payload);
             if ($updateData->status != "payment_success") {
+                $msg = 'Payment status not updated. Please try again.';
+                Logger::logException($msg, 500, ['payload' => $payload]);
                 return [
                     'success' => false,
-                    'errors' => 'Payment status not updated.please try again'
+                    'errors' => $msg,
+                    'status_code' => 500
                 ];
             }
             return [
@@ -345,9 +373,11 @@ class QuoteService implements QuoteServiceInterface
                 'data' => "Quote payment update sussceefully."
             ];
         } catch (Exception $e) {
+            Logger::logException($e);
             return [
                 'success' => false,
-                'errors' => 'An error occurred while fetching insurer quote: ' . $e->getMessage()
+                'errors' => $e->getMessage(),
+                'status_code' => 500
             ];
         }
     }

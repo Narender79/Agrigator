@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\Interfaces\ProposalServiceInterface;
+use App\Utils\Response;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -52,19 +53,15 @@ class ProposalController extends Controller
 
             $validator = Validator::make($request->all(), $rules);
             if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation error',
-                    'errors'  => $validator->errors()
-                ], 422);
+                return Response::validationFailed($validator->errors());
             }
             $result = $this->proposalService->createProposal($request->all());
-            return response()->json($result, $result['success'] ? 200 : 400);
+            if (isset($result['success']) && $result['success'] === false) {
+                return Response::failed(data_get($result, 'message', 'Proposal creation failed.'), 400, [], 400);
+            }
+            return Response::success(data_get($result, 'data'));
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'An error occurred while creating proposal: ' . $e->getMessage()
-            ], 500);
+            return Response::exeptionResponse($e);
         }
     }
 }

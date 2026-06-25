@@ -15,7 +15,10 @@ class InsuranceKycVerificationRepository implements InsuranceKycVerificationRepo
 
     public function savekycVerification(array $data): InsuranceKycVerification
     {
-        return InsuranceKycVerification::create($data);
+        return InsuranceKycVerification::updateOrCreate(
+            ['session_id' => $data['session_id']],
+            $data
+        );
     }
 
     /**
