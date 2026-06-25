@@ -12,7 +12,7 @@ use App\Models\TrimMapping;
 
 interface VehicleMappingRepositoryInterface
 {
-    public function getMakes(): Collection;
+    public function getMakes(?string $vehicleType): Collection;
 
     public function getModelsByMake(?string $makeCode): Collection;
 

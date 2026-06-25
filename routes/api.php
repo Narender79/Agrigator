@@ -44,7 +44,8 @@ Route::get('/insurance/available-options', [QuoteController::class, 'availableOp
 
 Route::middleware('merchant.api')->group(function () {
     Route::post('/insurance/getQuotes', [QuoteController::class, 'store']);
-    Route::get('/insurance/makes', [VehicleMappingController::class, 'getMakes']);
+    Route::get('/insurance/2w/makes', [VehicleMappingController::class, 'getMakes2w']);
+    Route::get('/insurance/4w/makes', [VehicleMappingController::class, 'getMakes4w']);
     Route::get('/insurance/models', [VehicleMappingController::class, 'getModels']);
     Route::get('/insurance/trims', [VehicleMappingController::class, 'getTrims']);
     Route::post('/insurance/proposal', [ProposalController::class, 'store']);

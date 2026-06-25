@@ -238,44 +238,92 @@ class SyncInsurerMasters extends Command
             $trimId = $mappedTrims[$row['trim_code']] ?? null;
 
             if ($makeId) {
-                $finalMakes["{$insurer->id}-{$makeId}"] = [
+                $finalMakes["{$insurer->id}-{$row['type']}-{$row['make_code']}"] = [
                     'insurer_id'        => $insurer->id,
                     'dr_make_id'        => $makeId,
+                    'vehicle_type'    => $row['type'],
                     'insurer_make_id'   => $row['make_code'],
                     'insurer_make_name' => $row['make_name'],
-                    'status'            => 'active',
                 ];
             }
 
             if ($makeId && $modelId) {
-                $finalModels["{$insurer->id}-{$modelId}"] = [
+                $finalModels["{$insurer->id}-{$row['type']}-{$row['model_code']}"] = [
                     'insurer_id'         => $insurer->id,
-                    'category_id'        => $row['type'] === '2w' ? 491 : 81,
+                    'insurer_make_id'    => $row['make_code'],
                     'dr_make_id'         => $makeId,
                     'dr_model_id'        => $modelId,
                     'insurer_model_id'   => $row['model_code'],
                     'insurer_model_name' => $row['model_name'],
-                    'status'             => 'active',
+                    'vehicle_type'       => $row['type'],
+                    'category_id'        => $row['type'] === '2w' ? 491 : 81,
                 ];
             }
 
             if ($makeId && $modelId && $trimId) {
-                $finalTrims["{$insurer->id}-{$trimId}"] = [
+                $finalTrims["{$insurer->id}-{$row['type']}-{$row['trim_code']}"] = [
                     'insurer_id'        => $insurer->id,
+                    'insurer_make_id'   => $row['make_code'],
+                    'insurer_model_id'  => $row['model_code'],
                     'dr_make_id'        => $makeId,
                     'dr_model_id'       => $modelId,
                     'dr_trim_id'        => $trimId,
                     'insurer_trim_id'   => $row['trim_code'],
+                    'vehicle_type'      => $row['type'],
                     'insurer_trim_name' => $row['trim_name'],
-                    'status'            => 'active',
                 ];
             }
         }
 
-        $this->saveChunked('Make Mappings', $finalMakes, MakeMapping::class, ['insurer_id', 'dr_make_id'], ['insurer_make_id', 'insurer_make_name', 'status']);
-        $this->saveChunked('Model Mappings', $finalModels, ModelMapping::class, ['insurer_id', 'dr_model_id'], ['category_id', 'dr_make_id', 'insurer_model_id', 'insurer_model_name', 'status']);
-        $this->saveChunked('Trim Mappings', $finalTrims, TrimMapping::class, ['insurer_id', 'dr_trim_id'], ['dr_make_id', 'dr_model_id', 'insurer_trim_id', 'insurer_trim_name', 'status']);
+        // Save by updating ONLY the Droom IDs, leaving all other columns untouched
+        $this->saveChunked('Make Mappings', $finalMakes, MakeMapping::class, ['insurer_id', 'vehicle_type', 'insurer_make_id'], ['dr_make_id']);
+        $this->saveChunked('Model Mappings', $finalModels, ModelMapping::class, ['insurer_id', 'vehicle_type', 'insurer_model_id'], ['dr_make_id', 'dr_model_id', 'insurer_make_id']);
+        $this->saveChunked('Trim Mappings', $finalTrims, TrimMapping::class, ['insurer_id', 'vehicle_type', 'insurer_trim_id'], ['dr_make_id', 'dr_model_id', 'dr_trim_id', 'insurer_make_id', 'insurer_model_id']);
 
+        $unresolvedRows = [];
+        foreach ($records as $row) {
+            $makeId = $mappedMakes[$row['make_code']] ?? null;
+            $modelId = $mappedModels[$row['model_code']] ?? null;
+            $trimId = $mappedTrims[$row['trim_code']] ?? null;
+            if (!$makeId || !$modelId || !$trimId) {
+                $unresolvedRows[] = [
+                    'vehicle_type'       => $row['type'],
+                    'insurer_make_id'    => $row['make_code'],
+                    'insurer_make_name'  => $row['make_name'],
+                    'make_mapped_id'     => $makeId,
+                    'insurer_model_id'   => $row['model_code'],
+                    'insurer_model_name' => $row['model_name'],
+                    'model_mapped_id'    => $modelId,
+                    'insurer_trim_id'    => $row['trim_code'],
+                    'insurer_trim_name'  => $row['trim_name'],
+                    'trim_mapped_id'     => $trimId,
+                ];
+            }
+        }
+        if (!empty($unresolvedRows)) {
+            $filePath = storage_path('app/unresolved_mappings.csv');
+            if (($fp = fopen($filePath, 'w')) !== false) {
+                // Header
+                fputcsv($fp, [
+                    'vehicle_type',
+                    'insurer_make_id',
+                    'insurer_make_name',
+                    'make_mapped_id',
+                    'insurer_model_id',
+                    'insurer_model_name',
+                    'model_mapped_id',
+                    'insurer_trim_id',
+                    'insurer_trim_name',
+                    'trim_mapped_id'
+                ]);
+                // Rows
+                foreach ($unresolvedRows as $uRow) {
+                    fputcsv($fp, $uRow);
+                }
+                fclose($fp);
+            }
+            $this->warn("Saved " . count($unresolvedRows) . " unresolved/unsynced records to: {$filePath}");
+        }
         $this->info('--- Synchronization Completed Successfully! ---');
         $this->info("Final Mapped Count ➔ Makes: " . count($finalMakes) . " | Models: " . count($finalModels) . " | Trims: " . count($finalTrims));
 

@@ -10,14 +10,17 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use App\Services\DroomAuthService;
+use App\Repositories\Interfaces\VehicleMappingRepositoryInterface;
 
 class VehicleDetailsController extends Controller
 {
     protected DroomAuthService $authService;
+    protected VehicleMappingRepositoryInterface $mappingRepo;
 
-    public function __construct(DroomAuthService $authService)
+    public function __construct(DroomAuthService $authService, VehicleMappingRepositoryInterface $mappingRepo)
     {
         $this->authService = $authService;
+        $this->mappingRepo = $mappingRepo;
     }
 
     /**
@@ -60,8 +63,8 @@ class VehicleDetailsController extends Controller
             $response1 = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $dTkn,
             ])->get($gatewayUrl . '/dss/v1/vehicle-rc-details', [
-                        'rc_number' => $rcNumber,
-                    ]);
+                'rc_number' => $rcNumber,
+            ]);
 
             if (!$response1->successful()) {
                 Log::error('Failed to fetch RC details', [
@@ -140,6 +143,35 @@ class VehicleDetailsController extends Controller
                 return Response::failed($data2['message'] ?? 'MMYT matching failed.', 400, [], 400);
             }
 
+            // Check if mapping exists in the database (Defaulting to TATA AIG: 1)
+            $insurerId = 1;
+            $makeName = $data2['data']['Make'] ?? $data2['data']['make'] ?? null;
+            $modelName = $data2['data']['Model'] ?? $data2['data']['model'] ?? null;
+            $trimName = $data2['data']['Trim'] ?? $data2['data']['trim'] ?? $data2['data']['variant'] ?? null;
+            $make = $this->mappingRepo->findMakeByName($makeName);
+            $model = $this->mappingRepo->findModelByName($modelName);
+            $trim = $this->mappingRepo->findTrimByName($trimName);
+            $makeMapping = $make ? $this->mappingRepo->findMakeMapping($insurerId, $make->id) : null;
+            $modelMapping = $model ? $this->mappingRepo->findModelMapping($insurerId, $model->id) : null;
+            $trimMapping = $trim ? $this->mappingRepo->findTrimMapping($insurerId, $trim->id) : null;
+            $isMapped = ($makeMapping && $modelMapping && $trimMapping) ? true : false;
+            // Append the mapping details and flag
+            $data2['data']['is_mapped'] = $isMapped;
+            if ($isMapped) {
+                $data2['data']['insurer_make_id']   = $makeMapping->insurer_make_id;
+                $data2['data']['insurer_make_name'] = $makeMapping->insurer_make_name;
+                $data2['data']['insurer_model_id']  = $modelMapping->insurer_model_id;
+                $data2['data']['insurer_model_name'] = $modelMapping->insurer_model_name;
+                $data2['data']['insurer_trim_id']   = $trimMapping->insurer_trim_id;
+                $data2['data']['insurer_trim_name'] = $trimMapping->insurer_trim_name;
+            } else {
+                $data2['data']['insurer_make_id']   = null;
+                $data2['data']['insurer_make_name'] = null;
+                $data2['data']['insurer_model_id']  = null;
+                $data2['data']['insurer_model_name'] = null;
+                $data2['data']['insurer_trim_id']   = null;
+                $data2['data']['insurer_trim_name'] = null;
+            }
             $data2['data']['vehicleData'] = $vehicleData;
 
             (new VehicleHistory())->createVehicleHistory($rcNumber, $vehicleData);
@@ -151,7 +183,6 @@ class VehicleDetailsController extends Controller
                     'message' => $data2['message'] ?? 'MMYT matched successfully!'
                 ]
             );
-
         } catch (\Throwable $th) {
             Log::error('Exception in VehicleDetailsController', [
                 'message' => $th->getMessage(),

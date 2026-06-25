@@ -35,13 +35,16 @@ class VehicleMappingRepository implements VehicleMappingRepositoryInterface
         $this->trimMapping = $trimMapping;
     }
 
-    public function getMakes(): Collection
+    public function getMakes(?string $vehicleType): Collection
     {
         // Return makes from Make table that have active mappings
-        return $this->makeMapping
-            ->where('status', 'active')
-            ->distinct()
-            ->get(['insurer_make_id', 'insurer_make_name']);
+        $query = $this->makeMapping->where('status', 'active');
+
+        if ($vehicleType) {
+            $query->where('vehicle_type', $vehicleType);
+        }
+
+        return $query->distinct()->get(['insurer_make_id', 'insurer_make_name']);
     }
 
     public function getModelsByMake(?string $makeCode): Collection

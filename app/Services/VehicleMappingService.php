@@ -14,9 +14,9 @@ class VehicleMappingService
         $this->mappingRepo = $mappingRepo;
     }
 
-    public function getFormattedMakes()
+    public function getFormattedMakes(?string $vehicleType)
     {
-        return $this->mappingRepo->getMakes()->map(function ($make) {
+        return $this->mappingRepo->getMakes($vehicleType)->map(function ($make) {
             return [
                 'id'   => $make->insurer_make_id,
                 'name' => $make->insurer_make_name,

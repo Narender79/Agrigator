@@ -39,29 +39,40 @@ class QuoteService implements QuoteServiceInterface
                 ];
             }
 
-            // finding the droom make_id from make name
-            $makeObj = $this->vehicleMappingRepo->findMakeByName($payload['make_name'] ?? null);
-            $modelObj = $this->vehicleMappingRepo->findModelByName($payload['model_name'] ?? null);
-            $trimObj = $this->vehicleMappingRepo->findTrimByName($payload['trim_name'] ?? null);
-
-            if (!$makeObj || !$modelObj || !$trimObj) {
-                return [
-                    'success' => false,
-                    'message' => 'Unable to find Make name , Model name, Trim name.'
-                ];
-            }
-            // \Log::info($payload);
-            // 2. Fetch mapping details using Droom IDs
-            $makeMapp = $this->vehicleMappingRepo->findMakeMapping($insurer->id, $makeObj->id ?? null);
-            $modelMapp = $this->vehicleMappingRepo->findModelMapping($insurer->id, $modelObj->id ?? null);
-            $trimMapp = $this->vehicleMappingRepo->findTrimMapping($insurer->id, $trimObj->id ?? null);
-
-            // If no mapping is found for the selected vehicle, return a clear mapping error
-            if (!$makeMapp || !$modelMapp || !$trimMapp) {
+            // 2. Retrieve mapping details directly from payload
+            $makeCode    = $payload['insurer_make_id'] ?? null;
+            $modelCode   = $payload['insurer_model_id'] ?? null;
+            $variantCode = $payload['insurer_trim_id'] ?? null;
+            $makeName    = $payload['insurer_make_name'] ?? $payload['make_name'] ?? null;
+            $modelName   = $payload['insurer_model_name'] ?? $payload['model_name'] ?? null;
+            $variantName = $payload['insurer_trim_name'] ?? $payload['trim_name'] ?? null;
+            // If the mapping IDs are missing or null, reject the request
+            if (empty($makeCode) || empty($modelCode) || empty($variantCode)) {
                 return [
                     'success' => false,
                     'message' => 'The selected vehicle details are not mapped for this insurer.'
                 ];
+            }
+            // Inject carrier-specific nomenclature and codes into the payload
+            $payload['vehicle_make']       = $makeName;
+            $payload['vehicle_model']      = $modelName;
+            $payload['vehicle_variant']    = $variantName;
+            $productCode = $payload['product_code'] ?? '';
+            $isTwoWheeler = ($productCode === '3187');
+            if ($isTwoWheeler) {
+                $payload['make_code']    = (string) $makeCode;
+                $payload['model_code']   = (string) $modelCode;
+                $payload['variant_code'] = (string) $variantCode;
+                if (isset($payload['man_year'])) {
+                    $payload['man_year'] = (string) $payload['man_year'];
+                }
+            } else {
+                $payload['vehicle_make_no']    = (int) $makeCode;
+                $payload['vehicle_model_no']   = (int) $modelCode;
+                $payload['vehicle_variant_no'] = (string) $variantCode;
+                if (isset($payload['man_year'])) {
+                    $payload['man_year'] = (int) $payload['man_year'];
+                }
             }
 
             // Generate or capture quote request session ID
@@ -80,29 +91,10 @@ class QuoteService implements QuoteServiceInterface
                 'expires_at' => now()->addDays(7),
             ]);
 
-            // 3. Inject carrier-specific nomenclature and codes into the payload
-            $payload['vehicle_make']       = $makeMapp->insurer_make_name;
-            $payload['vehicle_model']      = $modelMapp->insurer_model_name;
-            $payload['vehicle_variant']    = $trimMapp->insurer_trim_name;
-
-            $productCode = $payload['product_code'] ?? '';
-            $isTwoWheeler = ($productCode === '3187');
-
-            if ($isTwoWheeler) {
-                $payload['make_code']    = (string) $makeMapp->insurer_make_id;
-                $payload['model_code']   = (string) $modelMapp->insurer_model_id;
-                $payload['variant_code'] = (string) $trimMapp->insurer_trim_id;
-                if (isset($payload['man_year'])) {
-                    $payload['man_year'] = (string) $payload['man_year'];
-                }
-            } else {
-                $payload['vehicle_make_no']    = (int) $makeMapp->insurer_make_id;
-                $payload['vehicle_model_no']   = (int) $modelMapp->insurer_model_id;
-                $payload['vehicle_variant_no'] = (string) $trimMapp->insurer_trim_id;
-                if (isset($payload['man_year'])) {
-                    $payload['man_year'] = (int) $payload['man_year'];
-                }
-            }
+            // Inject carrier-specific nomenclature and codes into the payload
+            $payload['vehicle_make']       = $makeName;
+            $payload['vehicle_model']      = $modelName;
+            $payload['vehicle_variant']    = $variantName;
 
             // Map business_type from business_type_no if not present
             if (empty($payload['business_type']) && !empty($payload['business_type_no'])) {

@@ -22,19 +22,19 @@ class VehicleMappingController extends Controller
     }
 
     /**
-     * GET /api/insurance/tata-aig/makes
+     * GET /api/insurance/tata-aig/2w/makes
      */
-    public function getMakes(): JsonResponse
+    public function getMakes2w(): JsonResponse
     {
         try {
-            $makes = $this->mappingService->getFormattedMakes();
+            $makes = $this->mappingService->getFormattedMakes('2w');
 
             return response()->json([
                 'success' => true,
                 'data'    => $makes
             ]);
         } catch (Exception $e) {
-            Log::error('Failed to fetch makes: ' . $e->getMessage(), ['exception' => $e]);
+            Log::error('Failed to fetch 2w makes: ' . $e->getMessage(), ['exception' => $e]);
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch vehicle makes.'
@@ -42,6 +42,26 @@ class VehicleMappingController extends Controller
         }
     }
 
+    /**
+     * GET /api/insurance/tata-aig/2w/makes
+     */
+    public function getMakes4w(): JsonResponse
+    {
+        try {
+            $makes = $this->mappingService->getFormattedMakes('4w');
+
+            return response()->json([
+                'success' => true,
+                'data'    => $makes
+            ]);
+        } catch (Exception $e) {
+            Log::error('Failed to fetch 4w makes: ' . $e->getMessage(), ['exception' => $e]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch vehicle makes.'
+            ], 500);
+        }
+    }
     /**
      * GET /api/insurance/tata-aig/models?make_code=xxx
      */
