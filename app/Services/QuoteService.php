@@ -7,6 +7,7 @@ use App\Repositories\Interfaces\QuoteRepositoryInterface;
 use App\Services\TataAigMasterService;
 use App\Repositories\Interfaces\InsurerRepositoryInterface;
 use App\Repositories\Interfaces\VehicleMappingRepositoryInterface;
+use \App\Utils\Logger;
 
 use Illuminate\Support\Facades\Log;
 use Exception;
@@ -47,9 +48,12 @@ class QuoteService implements QuoteServiceInterface
 
             // If the mapping IDs are missing or null, reject the request
             if (empty($makeCode) || empty($modelCode) || empty($variantCode)) {
+                $msg = 'The selected vehicle details are not mapped for this insurer.';
+                Logger::logException($msg, 400, ['payload' => $payload]);
                 return [
                     'success' => false,
-                    'message' => 'The selected vehicle details are not mapped for this insurer.'
+                    'errors' => $msg,
+                    'status_code' => 400
                 ];
             }
 
@@ -93,11 +97,6 @@ class QuoteService implements QuoteServiceInterface
                 'expires_at' => now()->addDays(7),
             ]);
 
-            // Inject carrier-specific nomenclature and codes into the payload
-            $payload['vehicle_make']       = $makeName;
-            $payload['vehicle_model']      = $modelName;
-            $payload['vehicle_variant']    = $variantName;
-
             // Map business_type from business_type_no if not present
             if (empty($payload['business_type']) && !empty($payload['business_type_no'])) {
                 $payload['business_type'] = $payload['business_type_no'] === '01' ? 'New Business' : 'Roll Over';
@@ -129,9 +128,80 @@ class QuoteService implements QuoteServiceInterface
             $payload['product_id'] = $payload['product_id'] ?? 'M300000000001';
             $payload['pol_start_date'] = $payload['pol_start_date'] ?? now()->format('Y-m-d');
             $payload['proposer_type'] = $payload['proposer_type'] ?? 'Individual';
-            $payload['prev_pol_type'] = $payload['prev_pol_type'] ?? 'Package';
+            $payload['no_past_pol'] = $payload['no_past_pol'] ?? 'N';
 
             // Dynamically merge defaults when __finalize is '0' using null-coalescing
+            if (!$isTwoWheeler && isset($payload['pol_plan_id'])) {
+                $polPlanId = $payload['pol_plan_id'];
+                // 1. Map the pol_plan_variant string
+                if (in_array($polPlanId, ['01', '03'])) {
+                    $payload['pol_plan_variant'] = 'Standalone TP';
+                    $payload['prev_pol_type'] = 'Liability';
+                } elseif (in_array($polPlanId, ['02', '04'])) {
+                    $payload['pol_plan_variant'] = 'PackagePolicy';
+                    $payload['prev_pol_type'] = 'Package';
+                } elseif ($polPlanId === '05') {
+                    $payload['pol_plan_variant'] = 'Standalone OD';
+                    $payload['prev_pol_type'] = 'Liability';
+                }
+
+                // 2. Adjust dates and fields based on Plan Type
+                if (in_array($polPlanId, ['01', '03'])) {
+                    // Standalone TP: No Own Damage (OD) cover, no motor plan packages
+                    $payload['pol_od_end_date'] = '';
+                    $payload['motor_plan_opted_no'] = '';
+                    $payload['dep_reimburse_claims'] = '';
+                    $payload['engine_secure_options'] = '';
+                    $payload['tyre_secure_options'] = '';
+                } else if ($polPlanId === '04') {
+                    // Package 1+3: New Business - Calculate 3-year TP dates
+                    $payload['ble_tp_start'] = $payload['pol_start_date'];
+                    $polStart = new \DateTime($payload['pol_start_date']);
+                    $tpEnd = clone $polStart;
+                    $tpEnd->modify('+3 years -1 day');
+                    $payload['ble_tp_end'] = $tpEnd->format('Y-m-d');
+                } else if ($polPlanId == '05') {
+                    // Standalone OD: Active TP policy dates copy
+                    $payload['ble_tp_start'] = $payload['prev_pol_start_date'] ?? '';
+                    $payload['ble_tp_end'] = $payload['prev_pol_end_date'] ?? '';
+                    // Auto-calculate expired OD policy dates to satisfy 90-day rule
+                    $polStart = new \DateTime($payload['pol_start_date']);
+                    $prevEnd = clone $polStart;
+                    $prevEnd->modify('-1 day');
+                    $prevStart = clone $prevEnd;
+                    $prevStart->modify('-1 year +1 day');
+                    $payload['prev_pol_start_date'] = $prevStart->format('Y-m-d');
+                    $payload['prev_pol_end_date'] = $prevEnd->format('Y-m-d');
+                }
+
+                // 3. Handle PA Owner Cover
+                if ($polPlanId === '05') {
+                    $payload['pa_owner'] = 'No';
+                    $payload['pa_owner_tenure'] = '';
+                } else {
+                    $paOwner = strtolower($payload['pa_owner'] ?? '');
+                    if ($paOwner === 'true' || $paOwner === 'yes' || $paOwner === '1') {
+                        $payload['pa_owner'] = 'Yes';
+                        $payload['pa_owner_tenure'] = $payload['pa_owner_tenure'] ?? '1';
+                    } else {
+                        $payload['pa_owner'] = 'No';
+                        $payload['pa_owner_tenure'] = '';
+                    }
+                }
+                // 4. Map add-ons based on motor_plan_opted_no (if not Standalone TP)
+                if (!in_array($polPlanId, ['01', '03'])) {
+                    $motorPlan = $payload['motor_plan_opted_no'] ?? '';
+                    if (in_array($motorPlan, ['P4', 'P6', 'P7', 'P11', 'P12'])) {
+                        $payload['engine_secure_options'] = 'WITHOUT DEDUCTIBLE';
+                    }
+                    if (in_array($motorPlan, ['P5', 'P6', 'P7'])) {
+                        $payload['tyre_secure_options'] = 'REPLACEMENT BASIS';
+                    }
+                    if (in_array($motorPlan, ['P3', 'P4', 'P5', 'P6', 'P7', 'P10', 'P11', 'P12'])) {
+                        $payload['dep_reimburse_claims'] = '1';
+                    }
+                }
+            }
             $payload['__finalize']                    = $payload['__finalize'] ?? '0';
             $payload['cng_lpg_cover']                 = $payload['cng_lpg_cover'] ?? 'false';
             $payload['automobile_association_cover']  = $payload['automobile_association_cover'] ?? 'false';
@@ -153,7 +223,6 @@ class QuoteService implements QuoteServiceInterface
             // Schema-required missing properties
             $payload['fleet_code']                 = $payload['fleet_code'] ?? '';
             $payload['fleet_name']                 = $payload['fleet_name'] ?? '';
-            $payload['pa_owner']                   = $payload['pa_owner'] ?? 'false';
             $payload['vehicle_idv']                = $payload['vehicle_idv'] ?? '';
             $payload['quote_id']                   = $payload['quote_id'] ?? '';
             $payload['side_car_idv']               = $payload['side_car_idv'] ?? '';
@@ -161,7 +230,7 @@ class QuoteService implements QuoteServiceInterface
             $payload['electrical_si']              = $payload['electrical_si'] ?? '';
             $payload['voluntary_deductibles_amt']  = $payload['voluntary_deductibles_amt'] ?? '';
             $payload['voluntary_deductibles']      = $payload['voluntary_deductibles'] ?? 'false';
-            $payload['dep_reimburse_claims']       = $payload['dep_reimburse_claims'] ?? '';
+            // $payload['dep_reimburse_claims']       = $payload['dep_reimburse_claims'] ?? '';
             $payload['dep_reimburse_deductible']   = $payload['dep_reimburse_deductible'] ?? '';
             $payload['emg_med_exp_si']             = $payload['emg_med_exp_si'] ?? '';
             $payload['add_tppd_si']                = $payload['add_tppd_si'] ?? '';
@@ -186,7 +255,21 @@ class QuoteService implements QuoteServiceInterface
             $response = $this->tataAigService->fetchQuote($payload);
             $status = $response['success'] ? 'success' : 'failed';
             if ($status == 'failed') {
-                return $response;
+                $errorMessage = $response['message'] ?? 'Failed to retrieve quote from Tata AIG.';
+                if (isset($response['errors']['message_txt'])) {
+                    $errorMessage .= ' - ' . $response['errors']['message_txt'];
+                }
+
+                // Write to insure_error.log and insure_detail_error.log
+                Logger::logException($errorMessage, 400, [
+                    'payload' => $payload,
+                    'response' => $response
+                ]);
+                return [
+                    'success' => false,
+                    'errors' => $response['errors'] ?? $errorMessage,
+                    'status_code' => 400
+                ];
             }
             // die();
             $result = $response['data'];
@@ -223,8 +306,8 @@ class QuoteService implements QuoteServiceInterface
                 'nominee_relationships'     => config('insurance_masters.nominee_relationships'),
                 'appointee_relationships'   => config('insurance_masters.appointee_relationships'),
                 'financier_types'           => config('insurance_masters.financier_types'),
-                'tyre_secure_options'       => config('insurance_masters.tyre_secure_options'),
-                'engine_secure_options'     => config('insurance_masters.engine_secure_options'),
+                // 'tyre_secure_options'       => config('insurance_masters.tyre_secure_options'),
+                // 'engine_secure_options'     => config('insurance_masters.engine_secure_options'),
                 'owner_driver_declarations' => config('insurance_masters.owner_driver_declarations'),
                 'occupations'               => config('insurance_masters.occupations'),
             ];
@@ -232,13 +315,11 @@ class QuoteService implements QuoteServiceInterface
             $result['session_id'] = $sessionId;
             return $result;
         } catch (Exception $e) {
-            // Log::error('Error fetching quote in QuoteService: ' . $e->getMessage(), [
-            //     'payload' => $payload,
-            //     'exception' => $e
-            // ]);
+            Logger::logException($e);
             return [
                 'success' => false,
-                'errors' => $e->getMessage()
+                'errors' => $e->getMessage(),
+                'status_code' => 500
             ];
         }
     }
@@ -247,32 +328,44 @@ class QuoteService implements QuoteServiceInterface
     {
         try {
             if (empty($payload['quote_id']) && empty($payload['droom_payment_id']) && empty($payload['gateway_txn_id']) && empty($payload['payment_status']) && empty($payload['payment_id']) && empty($payload['selling_price'])) {
+                $msg = 'Something missing in your payload.';
+                Logger::logException($msg, 400, ['payload' => $payload]);
                 return [
                     'success' => false,
-                    'errors' => 'Something missing inyour payload.'
+                    'errors' => $msg,
+                    'status_code' => 400
                 ];
             }
             $getInsuranceObj = $this->quoteRepo->checkValidQuoteID($payload['quote_id']);
             if ($getInsuranceObj->status != 'quote_completed') {
+                $msg = 'Your quotation is not finalized.';
+                Logger::logException($msg, 400, ['payload' => $payload]);
                 return [
                     'success' => false,
-                    'errors' => 'Your quotation is not finalized.'
+                    'errors' => $msg,
+                    'status_code' => 400
                 ];
             }
 
             // Check Payable Amount
             if ($getInsuranceObj->net_premium != $payload['selling_price']) {
+                $msg = 'Payable amount mismatch.';
+                Logger::logException($msg, 400, ['payload' => $payload]);
                 return [
                     'success' => false,
-                    'errors' => 'Payable amount mismatch.'
+                    'errors' => $msg,
+                    'status_code' => 400
                 ];
             }
 
             $updateData = $this->quoteRepo->updatePaymentStatus($payload);
             if ($updateData->status != "payment_success") {
+                $msg = 'Payment status not updated. Please try again.';
+                Logger::logException($msg, 500, ['payload' => $payload]);
                 return [
                     'success' => false,
-                    'errors' => 'Payment status not updated.please try again'
+                    'errors' => $msg,
+                    'status_code' => 500
                 ];
             }
             return [
@@ -280,9 +373,11 @@ class QuoteService implements QuoteServiceInterface
                 'data' => "Quote payment update sussceefully."
             ];
         } catch (Exception $e) {
+            Logger::logException($e);
             return [
                 'success' => false,
-                'errors' => 'An error occurred while fetching insurer quote: ' . $e->getMessage()
+                'errors' => $e->getMessage(),
+                'status_code' => 500
             ];
         }
     }

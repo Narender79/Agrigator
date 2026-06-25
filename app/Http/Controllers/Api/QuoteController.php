@@ -22,10 +22,12 @@ class QuoteController extends Controller
             $result = $this->quoteService->getInsurerQuote($request->all());
 
             if (isset($result['success']) && $result['success'] === false) {
+                $statusCode = data_get($result, 'status_code', 400);
                 return Response::failed(
                     data_get($result, 'errors'),
-                    500,
-                    ['data' => $result]
+                    $statusCode,
+                    ['data' => $result],
+                    $statusCode
                 );
             }
 
@@ -74,12 +76,14 @@ class QuoteController extends Controller
             $result = $this->quoteService->updateQuotePaymentStatus($validatedData);
 
             if (isset($result['success']) && $result['success'] === false) {
+                $statusCode = data_get($result, 'status_code', 400);
                 return Response::failed(
                     data_get($result, 'errors'),
-                    500
+                    $statusCode,
+                    [],
+                    $statusCode
                 );
             }
-
             return Response::success(data_get($result, 'data'));
         } catch (\Exception $e) {
             return Response::exeptionResponse($e);

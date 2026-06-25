@@ -27,7 +27,6 @@ class StorePostQuoteRequest extends FormRequest
         } else {
             $this->merge([
                 'product_code'      => '3184',
-                'pol_plan_variant'  => 'PackagePolicy',
             ]);
         }
     }
@@ -63,7 +62,7 @@ class StorePostQuoteRequest extends FormRequest
             $rules['plan_type']  = 'required|string';
         } else {
             $rules['pol_plan_id'] = 'required|string';
-            $rules['motor_plan_opted_no'] = 'required|string';
+            $rules['motor_plan_opted_no'] = 'nullable|string';
         }
 
         return $rules;
@@ -74,7 +73,7 @@ class StorePostQuoteRequest extends FormRequest
         throw new HttpResponseException(Response::validationFailed($validator->errors()));
     }
 
-     public function messages(): array
+    public function messages(): array
     {
         return [
             'vehicle_type.in' => 'Vehicle type must be either 2w or 4w.',

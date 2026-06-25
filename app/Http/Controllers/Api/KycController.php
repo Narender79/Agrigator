@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Services\Interfaces\KycServiceInterface;
 use Illuminate\Http\Request;
+use App\Utils\Response;
 use Illuminate\Support\Facades\Validator;
 
 class KycController extends Controller
@@ -21,21 +22,17 @@ class KycController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation error',
-                    'errors' => $validator->errors()
-                ], 422);
+                return Response::validationFailed($validator->errors());
             }
 
             $result = $this->kycService->verifyKyc($request->all());
 
-            return response()->json($result, $result['success'] ? 200 : 400);
+            if (isset($result['success']) && $result['success'] === false) {
+                return Response::failed(data_get($result, 'message', 'KYC verification failed.'), 400, [], 400);
+            }
+            return Response::success(data_get($result, 'data'));
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to process KYC verification: ' . $e->getMessage()
-            ], 500);
+            return Response::exeptionResponse($e);
         }
     }
 }
