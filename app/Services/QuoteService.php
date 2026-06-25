@@ -33,10 +33,7 @@ class QuoteService implements QuoteServiceInterface
             $insurer = $this->insurerRepo->getActiveByName('TATA AIG GENERAL INSURANCE');
 
             if (!$insurer || $insurer->status !== 'active') {
-                return [
-                    'success' => false,
-                    'message' => 'Insurer is not active or available.'
-                ];
+                throw new Exception("Insurer is not active or available.");
             }
 
             // 2. Retrieve mapping details directly from payload
@@ -52,6 +49,24 @@ class QuoteService implements QuoteServiceInterface
                     'success' => false,
                     'message' => 'The selected vehicle details are not mapped for this insurer.'
                 ];
+            }
+            // finding the droom make_id from make name
+            $makeObj = $this->vehicleMappingRepo->findMakeByName($payload['make_name'] ?? null);
+            $modelObj = $this->vehicleMappingRepo->findModelByName($payload['model_name'] ?? null);
+            $trimObj = $this->vehicleMappingRepo->findTrimByName($payload['trim_name'] ?? null);
+
+            if (!$makeObj || !$modelObj || !$trimObj) {
+                throw new Exception("Unable to find Make name , Model name, Trim name.");
+            }
+            // \Log::info($payload);
+            // 2. Fetch mapping details using Droom IDs
+            $makeMapp = $this->vehicleMappingRepo->findMakeMapping($insurer->id, $makeObj->id ?? null);
+            $modelMapp = $this->vehicleMappingRepo->findModelMapping($insurer->id, $modelObj->id ?? null);
+            $trimMapp = $this->vehicleMappingRepo->findTrimMapping($insurer->id, $trimObj->id ?? null);
+
+            // If no mapping is found for the selected vehicle, return a clear mapping error
+            if (!$makeMapp || !$modelMapp || !$trimMapp) {
+                throw new Exception("The selected vehicle details are not mapped for this insurer.");
             }
             // Inject carrier-specific nomenclature and codes into the payload
             $payload['vehicle_make']       = $makeName;
@@ -179,7 +194,7 @@ class QuoteService implements QuoteServiceInterface
 
             // Remove Droom-specific IDs before sending to Tata AIG
             unset($payload['make_id'], $payload['model_id'], $payload['trim_id']);
-            \Log::info($payload);
+            // \Log::info($payload);
             // 4. Call Tata AIG Master Service directly
             $response = $this->tataAigService->fetchQuote($payload);
             $status = $response['success'] ? 'success' : 'failed';
@@ -236,7 +251,7 @@ class QuoteService implements QuoteServiceInterface
             // ]);
             return [
                 'success' => false,
-                'message' => 'An error occurred while fetching insurer quote: ' . $e->getMessage()
+                'errors' => $e->getMessage()
             ];
         }
     }
