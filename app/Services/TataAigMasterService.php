@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Insurance\InsuranceRequestResponseLogs;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Models\Insurance\InsurerIntegration;
@@ -142,6 +143,9 @@ class TataAigMasterService
                 'x-api-key' => $this->apiKey,
                 'Content-Type' => 'application/json'
             ])->timeout($this->timeout)->post($url, $payload);
+
+            InsuranceRequestResponseLogs::insuranceRRLogs($payload, $response->json(), "quote", $payload['session_id']);
+
             $apiStatus = $response['status'] ?? null;
             if ($response->failed() || $apiStatus !== 200) {
                 Log::error('Tata AIG Quote API Failure', [
@@ -229,6 +233,8 @@ class TataAigMasterService
                 'x-api-key' => $this->apiKey,
                 'Content-Type' => 'application/json'
             ])->timeout($this->timeout)->post($url, $payload);
+
+            InsuranceRequestResponseLogs::insuranceRRLogs($payload, $response->json(), "proposal", $payload['proposal_id']);
             // \Log::info($response);
             if ($response->failed() || $response['status'] !== 200) {
                 Log::error('Tata AIG Proposal API Failure', [
@@ -275,6 +281,8 @@ class TataAigMasterService
                 'Content-Type' => 'application/json'
             ])->timeout($this->timeout)->post($url, $payload);
 
+            InsuranceRequestResponseLogs::insuranceRRLogs($payload, $response->json(), "kyc", $payload['quote_id']);
+
             if ($response->failed() || ($response['status'] ?? null) !== 200) {
                 Log::error('Tata AIG CKYC API Failure', [
                     'status' => $response->status(),
@@ -315,6 +323,8 @@ class TataAigMasterService
                 'x-api-key' => $this->apiKey,
                 'Content-Type' => 'application/json'
             ])->timeout($this->timeout)->post($url, $payload);
+
+            InsuranceRequestResponseLogs::insuranceRRLogs($payload, $response->json(), "payment-verified", $payload['consumerAppTransId']);
 
             if ($response->failed() || ($response['status'] !== 200)) {
                 Log::error('Tata AIG Payment Verification API Failure', [

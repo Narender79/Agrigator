@@ -9,6 +9,8 @@ class ProposalRepository implements ProposalRepositoryInterface
 {
     public function saveProposal(array $data): Proposal
     {
-        return Proposal::create($data);
+        return Proposal::updateOrCreate([
+            'insurer_proposal_ref' => $data['insurer_proposal_ref'], // lookup condition
+        ], $data);
     }
 }
