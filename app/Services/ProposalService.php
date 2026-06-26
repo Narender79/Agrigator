@@ -60,18 +60,40 @@ class ProposalService implements ProposalServiceInterface
     {
         $record = $this->usersInsuranceRepo->findByProposalIdOrQuoteNo($payload['proposal_id'], $payload['quote_no'] ?? null);
         // die();
-        if (!$record) {
+        if (! $record) {
             throw new BusinessException(
-                'Proposal generation is unauthorized. Payment has not been completed successfully.'
+                'Proposal record not found.',
+                404
             );
         }
 
-        if (empty($record->droom_payment_id) && $record->status !== 'payment_success') {
+        $this->ensureProposalNotAlreadyCreated($record);
+
+        $this->ensurePaymentCompleted($record);
+
+        return $record;
+    }
+    private function ensurePaymentCompleted($record): void
+    {
+        if (
+            empty($record->droom_payment_id) ||
+            $record->status !== PAYMENT_SUCCESS
+        ) {
             throw new BusinessException(
-                'Proposal generation is unauthorized. Payment has not been completed successfully.'
+                'Payment has not been completed successfully.',
+                400
             );
         }
-        return $record;
+    }
+
+    private function ensureProposalNotAlreadyCreated($record): void
+    {
+        if (in_array($record->status, [PROPOSAL_COMPLETED, PAYMENT_VERIFIED, KYC_COMPLETED, POLICY_GENERATED])) {
+            throw new BusinessException(
+                'A proposal has already been generated for this quote.',
+                409
+            );
+        }
     }
 
     private function buildTataAigProposalPayload(array $payload): array

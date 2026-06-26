@@ -28,7 +28,7 @@ class KycService implements KycServiceInterface
             $record = $this->userInsuranceRepo->findByQuoteId($quoteId);
 
             // 2. Auth check: Ensure proposal is completed
-            if (!$record || $record->status !== 'proposal_completed') {
+            if (!$record || $record->status !== PROPOSAL_COMPLETED) {
                 return [
                     'success' => false,
                     'message' => 'KYC is unauthorized. Proposal has not been completed.'
@@ -88,7 +88,7 @@ class KycService implements KycServiceInterface
             ]);
 
             $this->userInsuranceRepo->updateOrCreateByUniqueId($record->insurance_unique_id, [
-                'status' => 'kyc_completed',
+                'status' => KYC_COMPLETED,
             ]);
 
             // Call the unified payment verification service
