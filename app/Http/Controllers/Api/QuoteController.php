@@ -60,6 +60,7 @@ class QuoteController extends Controller
                 'engine_secure_options' => config('insurance_masters.engine_secure_options'),
                 'owner_driver_declarations' => config('insurance_masters.owner_driver_declarations'),
                 'occupations' => config('insurance_masters.occupations'),
+                'pre_insurer_options' => config('insurance_masters.pre_insurer_options', []),
             ];
 
             return Response::success($result);
