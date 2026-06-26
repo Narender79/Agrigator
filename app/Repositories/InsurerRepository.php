@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Exceptions\BusinessException;
 use App\Models\Insurance\Insurer;
 use App\Models\Insurance\InsurerIntegration;
 use App\Repositories\Interfaces\InsurerRepositoryInterface;
@@ -65,6 +66,9 @@ class InsurerRepository implements InsurerRepositoryInterface
     public function showInsurerByUserId(int $userId, bool $objReturn = true)
     {
         $insurer =  Insurer::query()->where('user_id', $userId)->first();
+        if (!$insurer) {
+            throw new BusinessException("Insurer not found");
+        }
         if ($objReturn) {
             return $insurer;
         }
@@ -74,6 +78,11 @@ class InsurerRepository implements InsurerRepositoryInterface
     public function getInsurer(int $id, bool $objReturn = true)
     {
         $insurer = Insurer::findOrFail($id);
+
+        if (!$insurer) {
+            throw new BusinessException("Insurer not found");
+        }
+
         if ($objReturn) {
             return $insurer;
         }

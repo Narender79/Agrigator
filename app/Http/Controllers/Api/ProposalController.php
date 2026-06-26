@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\BusinessException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StorePostProposalRequest;
 use App\Services\Interfaces\ProposalServiceInterface;
@@ -25,7 +26,13 @@ class ProposalController extends Controller
                     ['data' => $result]
                 );
             }
-            return Response::success(data_get($result, 'data'), data_get($result, 'message'));
+            return Response::success(
+                data_get($result, 'data'),
+                ["message" => data_get($result, 'message')]
+            );
+        } catch (BusinessException $e) {
+
+            return Response::failed($e->getMessage(), 404);
         } catch (\Exception $e) {
             return Response::exeptionResponse($e);
         }
