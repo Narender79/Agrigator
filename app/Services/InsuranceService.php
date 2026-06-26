@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Repositories\Interfaces\QuoteRepositoryInterface;
 use App\Services\Interfaces\InsuranceServiceInterface;
-use Exception;
 
 class InsuranceService implements InsuranceServiceInterface
 {
