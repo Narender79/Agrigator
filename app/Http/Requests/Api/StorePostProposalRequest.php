@@ -47,7 +47,7 @@ class StorePostProposalRequest extends FormRequest
             'quote_no'            => 'required|string|min:16',
             // Address details
             'address_line_1'      => 'required|string|max:255',
-            // 'address_line_2'      => 'nullable|string|max:255',
+            'address_line_2'      => 'nullable|string|max:255',
             'pincode'             => 'required|string|size:6',
             // Nominee Details
             'nominee_name'        => 'required|string|max:150',

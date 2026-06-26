@@ -59,7 +59,14 @@ class ProposalService implements ProposalServiceInterface
     private function validatePaymentBeforeProposalGeneration(array $payload)
     {
         $record = $this->usersInsuranceRepo->findByProposalIdOrQuoteNo($payload['proposal_id'], $payload['quote_no'] ?? null);
-        if (!$record || empty($record->droom_payment_id) || $record->status !== 'payment_success') {
+        // die();
+        if (!$record) {
+            throw new BusinessException(
+                'Proposal generation is unauthorized. Payment has not been completed successfully.'
+            );
+        }
+
+        if (empty($record->droom_payment_id) && $record->status !== 'payment_success') {
             throw new BusinessException(
                 'Proposal generation is unauthorized. Payment has not been completed successfully.'
             );
@@ -79,8 +86,8 @@ class ProposalService implements ProposalServiceInterface
             'proposer_gender'              => $payload['gender'],
             'proposer_marital'             => $payload['marital_status'],
             'proposer_add1'                => $payload['address_line_1'],
-            'proposer_add2'                => $payload['address_line_2'],
-            'proposer_add3'                => $payload['address_line_3'],
+            'proposer_add2'                => $payload['address_line_2'] ?? '',
+            'proposer_add3'                => $payload['address_line_3'] ?? '',
             'proposer_occupation'          => strtoupper($payload['occupation']),
             'proposer_pan'                 => $payload['pan'] ?? '',
             'proposer_dob'                 => $payload['dob'],
