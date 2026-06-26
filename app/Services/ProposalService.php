@@ -2,13 +2,13 @@
 
 namespace App\Services;
 
+use App\Exceptions\BusinessException;
 use Illuminate\Support\Facades\Auth;
 use App\Repositories\Interfaces\ProposalRepositoryInterface;
 use App\Services\Interfaces\ProposalServiceInterface;
 use App\Services\TataAigMasterService;
 use App\Repositories\Interfaces\UsersInsuranceRepositoryInterface;
 use Exception;
-use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 
 class ProposalService implements ProposalServiceInterface
 {
@@ -60,8 +60,7 @@ class ProposalService implements ProposalServiceInterface
     {
         $record = $this->usersInsuranceRepo->findByProposalIdOrQuoteNo($payload['proposal_id'], $payload['quote_no'] ?? null);
         if (!$record || empty($record->droom_payment_id) || $record->status !== 'payment_success') {
-            throw new UnauthorizedHttpException(
-                '',
+            throw new BusinessException(
                 'Proposal generation is unauthorized. Payment has not been completed successfully.'
             );
         }
