@@ -29,7 +29,7 @@ Route::get('/partner-credentials/partner/{partnerId}', [PartnerCredentialControl
 
 
 Route::post('/insurers', [InsurerController::class, 'store']);
-Route::match(['put', 'patch'], '/insurers/{insurer}', [InsurerController::class, 'update']);
+Route::match(['put', 'patch'], '/insurers/{id}', [InsurerController::class, 'update']);
 Route::get('/insurers/user/{userId}', [InsurerController::class, 'showByUserId']);
 
 Route::post('/insurer-integrations', [InsurerIntegrationController::class, 'store']);
