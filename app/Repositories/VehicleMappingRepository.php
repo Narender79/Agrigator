@@ -72,14 +72,22 @@ class VehicleMappingRepository implements VehicleMappingRepositoryInterface
         return $this->make->where('make_name', $name)->first();
     }
 
-    public function findModelByName(?string $name): ?VehicleModel
+    public function findModelByName(?string $name, ?int $makeId = null): ?VehicleModel
     {
-        return $this->model->where('model_name', $name)->first();
+        $query = $this->model->where('model_name', $name);
+        if ($makeId !== null) {
+            $query->where('make_id', $makeId);
+        }
+        return $query->first();
     }
 
-    public function findTrimByName(?string $name): ?Trim
+    public function findTrimByName(?string $name, ?int $modelId = null): ?Trim
     {
-        return $this->trim->where('trim_name', $name)->first();
+        $query = $this->trim->where('trim_name', $name);
+        if ($modelId !== null) {
+            $query->where('model_id', $modelId);
+        }
+        return $query->first();
     }
 
     public function findMakeMapping(int $insurerId, ?int $makeId): ?MakeMapping

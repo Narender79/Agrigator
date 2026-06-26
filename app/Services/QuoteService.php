@@ -36,7 +36,6 @@ class QuoteService implements QuoteServiceInterface
                 throw new Exception("Insurer is not active or available.");
             }
 
-            // 2. Retrieve mapping details directly from payload
             $makeCode    = $payload['insurer_make_id'] ?? null;
             $modelCode   = $payload['insurer_model_id'] ?? null;
             $variantCode = $payload['insurer_trim_id'] ?? null;
@@ -61,7 +60,13 @@ class QuoteService implements QuoteServiceInterface
             $payload['vehicle_model']      = $modelName;
             $payload['vehicle_variant']    = $variantName;
 
-            $productCode = $payload['product_code'] ?? '';
+            $vehicleType = $payload['vehicle_type'] ?? '4w';
+            if ($vehicleType === '2w') {
+                $payload['product_code'] = '3187';
+            } else {
+                $payload['product_code'] = '3184';
+            }
+            $productCode = $payload['product_code'];
             $isTwoWheeler = ($productCode === '3187');
 
             if ($isTwoWheeler) {
@@ -121,6 +126,18 @@ class QuoteService implements QuoteServiceInterface
             $payload['regno_3'] = $regno_3;
             $payload['regno_4'] = $regno_4;
 
+            // Resolve place_reg_no (RTO code) dynamically based on registration prefix
+            if (empty($payload['place_reg_no']) && !empty($regno_1) && !empty($regno_2)) {
+                $rtoResponse = $this->tataAigService->fetchRto();
+                if (isset($rtoResponse['status']) && $rtoResponse['status'] == 200 && !empty($rtoResponse['data'])) {
+                    foreach ($rtoResponse['data'] as $item) {
+                        if (strcasecmp($item['code1'], $regno_1) === 0 && strcasecmp($item['code2'], $regno_2) === 0) {
+                            $payload['place_reg_no'] = (string) $item['code'];
+                            break;
+                        }
+                    }
+                }
+            }
 
             // Default values  
             $payload['q_producer_code'] = $payload['q_producer_code'] ?? '4984727878';
@@ -129,41 +146,176 @@ class QuoteService implements QuoteServiceInterface
             $payload['proposer_type'] = $payload['proposer_type'] ?? 'Individual';
             $payload['no_past_pol'] = $payload['no_past_pol'] ?? 'N';
 
-            // Dynamically merge defaults when __finalize is '0' using null-coalescing
-            if (!$isTwoWheeler && isset($payload['pol_plan_id'])) {
-                $polPlanId = $payload['pol_plan_id'];
-                // 1. Map the pol_plan_variant string
-                if (in_array($polPlanId, ['01', '03'])) {
-                    $payload['pol_plan_variant'] = 'Standalone TP';
-                    $payload['prev_pol_type'] = 'Liability';
-                } elseif (in_array($polPlanId, ['02', '04'])) {
-                    $payload['pol_plan_variant'] = 'PackagePolicy';
-                    $payload['prev_pol_type'] = 'Package';
-                } elseif ($polPlanId === '05') {
-                    $payload['pol_plan_variant'] = 'Standalone OD';
-                    $payload['prev_pol_type'] = 'Liability';
+            if (!$isTwoWheeler) {
+                // --- FOUR WHEELER (4W) POLICY LOGIC & DEFAULTS ---
+                if (isset($payload['pol_plan_id'])) {
+                    $polPlanId = $payload['pol_plan_id'];
+                    // 1. Map the pol_plan_variant string
+                    if (in_array($polPlanId, ['01', '03'])) {
+                        $payload['pol_plan_variant'] = 'Standalone TP';
+                        $payload['prev_pol_type'] = 'Liability';
+                    } elseif (in_array($polPlanId, ['02', '04'])) {
+                        $payload['pol_plan_variant'] = 'PackagePolicy';
+                        $payload['prev_pol_type'] = 'Package';
+                    } elseif ($polPlanId === '05') {
+                        $payload['pol_plan_variant'] = 'Standalone OD';
+                        $payload['prev_pol_type'] = 'Liability';
+                    }
+
+                    // 2. Adjust dates and fields based on Plan Type
+                    if (in_array($polPlanId, ['01', '03'])) {
+                        $payload['pol_od_end_date'] = '';
+                        $payload['motor_plan_opted_no'] = '';
+                        $payload['dep_reimburse_claims'] = '';
+                        $payload['engine_secure_options'] = '';
+                        $payload['tyre_secure_options'] = '';
+                    } else if (in_array($polPlanId, ['02', '04', '05'])) {
+                        $polStart = new \DateTime($payload['pol_start_date']);
+                        $odEnd = clone $polStart;
+                        $odEnd->modify('+1 year -1 day');
+                        $payload['pol_od_end_date'] = $odEnd->format('Y-m-d');
+
+                        if ($polPlanId === '04') {
+                            $payload['ble_tp_start'] = $payload['pol_start_date'];
+                            $tpEnd = clone $polStart;
+                            $tpEnd->modify('+3 years -1 day');
+                            $payload['ble_tp_end'] = $tpEnd->format('Y-m-d');
+                        } else if ($polPlanId == '05') {
+                            $payload['ble_tp_start'] = $payload['prev_pol_start_date'] ?? '';
+                            $payload['ble_tp_end'] = $payload['prev_pol_end_date'] ?? '';
+                            $prevEnd = clone $polStart;
+                            $prevEnd->modify('-1 day');
+                            $prevStart = clone $prevEnd;
+                            $prevStart->modify('-1 year +1 day');
+                            $payload['prev_pol_start_date'] = $prevStart->format('Y-m-d');
+                            $payload['prev_pol_end_date'] = $prevEnd->format('Y-m-d');
+                        }
+                    }
+
+                    // 3. Handle PA Owner Cover
+                    if ($polPlanId === '05') {
+                        $payload['pa_owner'] = 'No';
+                        $payload['pa_owner_tenure'] = '';
+                    } else {
+                        $paOwner = strtolower($payload['pa_owner'] ?? '');
+                        if ($paOwner === 'true' || $paOwner === 'yes' || $paOwner === '1') {
+                            $payload['pa_owner'] = 'Yes';
+                            $payload['pa_owner_tenure'] = $payload['pa_owner_tenure'] ?? '1';
+                        } else {
+                            $payload['pa_owner'] = 'No';
+                            $payload['pa_owner_tenure'] = '';
+                        }
+                    }
+
+                    // 4. Map add-ons based on motor_plan_opted_no (if not Standalone TP)
+                    if (!in_array($polPlanId, ['01', '03'])) {
+                        $payload['motor_plan_opted_no'] = $payload['motor_plan_opted_no'] ?? 'P1';
+                        $motorPlan = $payload['motor_plan_opted_no'];
+                        if (in_array($motorPlan, ['P4', 'P6', 'P7', 'P11', 'P12'])) {
+                            $payload['engine_secure_options'] = 'WITHOUT DEDUCTIBLE';
+                        }
+                        if (in_array($motorPlan, ['P5', 'P6', 'P7'])) {
+                            $payload['tyre_secure_options'] = 'REPLACEMENT BASIS';
+                        }
+                        if (in_array($motorPlan, ['P3', 'P4', 'P5', 'P6', 'P7', 'P10', 'P11', 'P12'])) {
+                            $payload['dep_reimburse_claims'] = '2';
+                        }
+                    } else {
+                        $payload['motor_plan_opted_no'] = '';
+                        $payload['engine_secure_options'] = '';
+                        $payload['tyre_secure_options'] = '';
+                        $payload['dep_reimburse_claims'] = '';
+                    }
                 }
 
-                // 2. Adjust dates and fields based on Plan Type
-                if (in_array($polPlanId, ['01', '03'])) {
-                    // Standalone TP: No Own Damage (OD) cover, no motor plan packages
-                    $payload['pol_od_end_date'] = '';
-                    $payload['motor_plan_opted_no'] = '';
-                    $payload['dep_reimburse_claims'] = '';
-                    $payload['engine_secure_options'] = '';
-                    $payload['tyre_secure_options'] = '';
-                } else if ($polPlanId === '04') {
-                    // Package 1+3: New Business - Calculate 3-year TP dates
-                    $payload['ble_tp_start'] = $payload['pol_start_date'];
+                // 5. Default 4W-specific properties and covers
+                $payload['product_name'] = $payload['product_name'] ?? 'Private Car';
+                $booleanNoKeys = [
+                    'rtn_invoice',
+                    'cng_lpg',
+                    'dep_reimburse',
+                    'tyre_secure',
+                    'engine_secure',
+                    'key_replace',
+                    'repair_glass',
+                    'return_invoice',
+                    'personal_loss',
+                    'emergency_expense',
+                    'consumbale_expense',
+                    'rsa',
+                    'add_towing',
+                    'own_premises',
+                    'automobile_association_cover',
+                    'prev_tyre',
+                    'prev_engine',
+                    'prev_dep',
+                    'prev_consumable',
+                    'antitheft_cover',
+                    'vehicle_blind',
+                    'driving_tution',
+                    'tppd_discount',
+                    'voluntary_deductibles',
+                    'pa_paid',
+                    'pa_unnamed',
+                    'll_paid',
+                    'll_emp',
+                    'add_tppd',
+                    'add_pa_owner',
+                    'add_pa_unnamed',
+                    'vehicle_trails_racing',
+                    'ext_racing',
+                    'imported_veh_without_cus_duty',
+                    'fibre_fuel_tank',
+                    'loss_accessories',
+                    'geography_extension',
+                    'side_car',
+                    'non_electrical_acc',
+                    'electrical_acc',
+                    'emg_med_exp',
+                    'geography_extension_bang',
+                    'geography_extension_bhutan',
+                    'geography_extension_lanka',
+                    'geography_extension_maldives',
+                    'geography_extension_nepal',
+                    'geography_extension_pak'
+                ];
+                foreach ($booleanNoKeys as $key) {
+                    $payload[$key] = $payload[$key] ?? 'No';
+                }
+
+                $payload['special_regno'] = $payload['special_regno'] ?? 'false';
+                $payload['no_past_pol'] = $payload['no_past_pol'] ?? 'N';
+
+                $payload['cng_lpg_cover']                 = $payload['cng_lpg_cover'] ?? 'NO';
+                $payload['vintage_car']                   = $payload['vintage_car'] ?? 'No';
+                $payload['ncb_protection']                = $payload['ncb_protection'] ?? 'No';
+                $payload['load_fibre']                    = $payload['load_fibre'] ?? 'No';
+                $payload['load_imported']                 = $payload['load_imported'] ?? 'No';
+                $payload['load_tuition']                  = $payload['load_tuition'] ?? 'No';
+            } else {
+                // --- TWO WHEELER (2W) POLICY LOGIC & DEFAULTS ---
+                // 2. Map and format PA Owner Cover
+                $paOwner = strtolower($payload['pa_owner'] ?? '');
+                if ($paOwner === 'true' || $paOwner === 'yes' || $paOwner === '1') {
+                    $payload['pa_owner'] = 'true';
+                    $payload['pa_owner_tenure'] = $payload['pa_owner_tenure'] ?? '1';
+                    $payload['cpa_ten'] = $payload['pa_owner_tenure'];
+                    $payload['cpa_start_date'] = $payload['pol_start_date'];
                     $polStart = new \DateTime($payload['pol_start_date']);
-                    $tpEnd = clone $polStart;
-                    $tpEnd->modify('+3 years -1 day');
-                    $payload['ble_tp_end'] = $tpEnd->format('Y-m-d');
-                } else if ($polPlanId == '05') {
-                    // Standalone OD: Active TP policy dates copy
-                    $payload['ble_tp_start'] = $payload['prev_pol_start_date'] ?? '';
-                    $payload['ble_tp_end'] = $payload['prev_pol_end_date'] ?? '';
-                    // Auto-calculate expired OD policy dates to satisfy 90-day rule
+                    $cpaEnd = clone $polStart;
+                    $cpaEnd->modify('+' . $payload['cpa_ten'] . ' years -1 day');
+                    $payload['cpa_end_date'] = $cpaEnd->format('Y-m-d');
+                } else {
+                    $payload['pa_owner'] = 'false';
+                    $payload['pa_owner_tenure'] = '';
+                    $payload['cpa_ten'] = '0';
+                    $payload['cpa_start_date'] = '';
+                    $payload['cpa_end_date'] = '';
+                }
+
+                // 3. Previous Policy properties mapping
+                $payload['prev_pol_type'] = $payload['prev_pol_type'] ?? 'PackagePolicy';
+                if (empty($payload['prev_pol_start_date'])) {
                     $polStart = new \DateTime($payload['pol_start_date']);
                     $prevEnd = clone $polStart;
                     $prevEnd->modify('-1 day');
@@ -173,64 +325,97 @@ class QuoteService implements QuoteServiceInterface
                     $payload['prev_pol_end_date'] = $prevEnd->format('Y-m-d');
                 }
 
-                // 3. Handle PA Owner Cover
-                if ($polPlanId === '05') {
-                    $payload['pa_owner'] = 'No';
-                    $payload['pa_owner_tenure'] = '';
-                } else {
-                    $paOwner = strtolower($payload['pa_owner'] ?? '');
-                    if ($paOwner === 'true' || $paOwner === 'yes' || $paOwner === '1') {
-                        $payload['pa_owner'] = 'Yes';
-                        $payload['pa_owner_tenure'] = $payload['pa_owner_tenure'] ?? '1';
-                    } else {
-                        $payload['pa_owner'] = 'No';
-                        $payload['pa_owner_tenure'] = '';
-                    }
+                // 4. Default other covers required by the 2W API schema to 'false'
+                $booleanKeys = [
+                    'rtn_invoice',
+                    'cng_lpg',
+                    'dep_reimburse',
+                    'return_invoice',
+                    'consumbale_expense',
+                    'rsa',
+                    'add_towing',
+                    'own_premises',
+                    'automobile_association_cover',
+                    'antitheft_cover',
+                    'vehicle_blind',
+                    'driving_tution',
+                    'tppd_discount',
+                    'voluntary_deductibles',
+                    'pa_paid',
+                    'pa_unnamed',
+                    'll_paid',
+                    'll_emp',
+                    'add_tppd',
+                    'add_pa_owner',
+                    'add_pa_unnamed',
+                    'vehicle_trails_racing',
+                    'ext_racing',
+                    'imported_veh_without_cus_duty',
+                    'fibre_fuel_tank',
+                    'loss_accessories',
+                    'geography_extension',
+                    'special_regno',
+                    'side_car',
+                    'non_electrical_acc',
+                    'electrical_acc',
+                    'emg_med_exp',
+                    'geography_extension_bang',
+                    'geography_extension_bhutan',
+                    'geography_extension_lanka',
+                    'geography_extension_maldives',
+                    'geography_extension_nepal',
+                    'geography_extension_pak'
+                ];
+                foreach ($booleanKeys as $key) {
+                    $payload[$key] = $payload[$key] ?? 'false';
                 }
-                // 4. Map add-ons based on motor_plan_opted_no (if not Standalone TP)
-                if (!in_array($polPlanId, ['01', '03'])) {
-                    $motorPlan = $payload['motor_plan_opted_no'] ?? '';
-                    if (in_array($motorPlan, ['P4', 'P6', 'P7', 'P11', 'P12'])) {
-                        $payload['engine_secure_options'] = 'WITHOUT DEDUCTIBLE';
-                    }
-                    if (in_array($motorPlan, ['P5', 'P6', 'P7'])) {
-                        $payload['tyre_secure_options'] = 'REPLACEMENT BASIS';
-                    }
-                    if (in_array($motorPlan, ['P3', 'P4', 'P5', 'P6', 'P7', 'P10', 'P11', 'P12'])) {
-                        $payload['dep_reimburse_claims'] = '1';
-                    }
-                }
+
+                $payload['dep_reimb'] = $payload['dep_reimb'] ?? 'true';
+                $payload['no_past_pol'] = $payload['no_past_pol'] ?? 'false';
+
+                $payload['cng_lpg_cover']                 = $payload['cng_lpg_cover'] ?? 'false';
+                $payload['vintage_car']                   = $payload['vintage_car'] ?? 'false';
+                $payload['ncb_protection']                = $payload['ncb_protection'] ?? 'false';
+                $payload['load_fibre']                    = $payload['load_fibre'] ?? 'false';
+                $payload['load_imported']                 = $payload['load_imported'] ?? 'false';
+                $payload['load_tuition']                  = $payload['load_tuition'] ?? 'false';
             }
+
+            // --- SHARED DEFAULTS FOR BOTH 2W AND 4W ---
             $payload['__finalize']                    = $payload['__finalize'] ?? '0';
-            $payload['cng_lpg_cover']                 = $payload['cng_lpg_cover'] ?? 'false';
-            $payload['automobile_association_cover']  = $payload['automobile_association_cover'] ?? 'false';
-            $payload['antitheft_cover']               = $payload['antitheft_cover'] ?? 'false';
-            $payload['tppd_discount']                 = $payload['tppd_discount'] ?? 'false';
-            $payload['vehicle_blind']                 = $payload['vehicle_blind'] ?? 'false';
-            $payload['vintage_car']                   = $payload['vintage_car'] ?? 'false';
-            $payload['own_premises']                  = $payload['own_premises'] ?? 'false';
-            $payload['ncb_protection']                = $payload['ncb_protection'] ?? 'false';
-            $payload['add_towing']                    = $payload['add_towing'] ?? 'false';
             $payload['pa_owner_declaration']          = $payload['pa_owner_declaration'] ?? 'None';
-            $payload['pa_unnamed']                    = $payload['pa_unnamed'] ?? 'false';
             $payload['pa_named']                      = $payload['pa_named'] ?? '';
-            $payload['pa_paid']                       = $payload['pa_paid'] ?? 'false';
-            $payload['load_fibre']                    = $payload['load_fibre'] ?? 'false';
-            $payload['load_imported']                 = $payload['load_imported'] ?? 'false';
-            $payload['load_tuition']                  = $payload['load_tuition'] ?? 'false';
+            $payload['prev_cnglpg']                   = $payload['prev_cnglpg'] ?? 'false';
+            $payload['pa_paid_no']                    = $payload['pa_paid_no']        ?? '';
+            $payload['pa_paid_si']                    = $payload['pa_paid_si']        ?? '';
+            $payload['pa_unnamed_no']                 = $payload['pa_unnamed_no']     ?? '';
+            $payload['pa_unnamed_si']                 = $payload['pa_unnamed_si']     ?? '';
+            $payload['add_towing_amount']             = $payload['add_towing_amount'] ?? '';
+            $payload['ll_paid_no']                    = $payload['ll_paid_no']        ?? '';
+            $payload['ll_emp_no']                     = $payload['ll_emp_no']         ?? '';
+            $payload['fleet_policy']                  = $payload['fleet_policy'] ?? 'false';
+            $payload['fleet_code']                    = $payload['fleet_code'] ?? '';
+            $payload['fleet_name']                    = $payload['fleet_name'] ?? '';
+
+
 
             // Schema-required missing properties
-            $payload['fleet_code']                 = $payload['fleet_code'] ?? '';
-            $payload['fleet_name']                 = $payload['fleet_name'] ?? '';
             $payload['vehicle_idv']                = $payload['vehicle_idv'] ?? '';
             $payload['quote_id']                   = $payload['quote_id'] ?? '';
             $payload['side_car_idv']               = $payload['side_car_idv'] ?? '';
             $payload['non_electrical_si']          = $payload['non_electrical_si'] ?? '';
             $payload['electrical_si']              = $payload['electrical_si'] ?? '';
             $payload['voluntary_deductibles_amt']  = $payload['voluntary_deductibles_amt'] ?? '';
-            $payload['voluntary_deductibles']      = $payload['voluntary_deductibles'] ?? 'false';
-            // $payload['dep_reimburse_claims']       = $payload['dep_reimburse_claims'] ?? '';
+            $payload['dep_reimburse_claims']       = $payload['dep_reimburse_claims'] ?? '';
             $payload['dep_reimburse_deductible']   = $payload['dep_reimburse_deductible'] ?? '';
+            $payload['driver_age']                 = $payload['driver_age'] ?? '';
+            $payload['driver_gender']              = $payload['driver_gender'] ?? '';
+            $payload['driver_occupation']          = $payload['driver_occupation'] ?? '';
+            $payload['claim_last_count']           = $payload['claim_last_count'] ?? '';
+            $payload['claim_last_amount']          = $payload['claim_last_amount'] ?? '';
+            $payload['veh_plying_city']            = $payload['veh_plying_city'] ?? '';
+            $payload['non_electrical_des']         = $payload['non_electrical_des'] ?? '';
+            $payload['electrical_des']             = $payload['electrical_des'] ?? '';
             $payload['emg_med_exp_si']             = $payload['emg_med_exp_si'] ?? '';
             $payload['add_tppd_si']                = $payload['add_tppd_si'] ?? '';
             $payload['add_pa_owner_si']            = $payload['add_pa_owner_si'] ?? '';
@@ -245,11 +430,13 @@ class QuoteService implements QuoteServiceInterface
             $payload['uw_loading']                 = $payload['uw_loading'] ?? '';
             $payload['uw_discount']                = $payload['uw_discount'] ?? '';
             $payload['voluntary_amount']           = $payload['voluntary_amount'] ?? '';
+            $payload['cng_lpg_si']                 = $payload['cng_lpg_si'] ?? '';
+            $payload['automobile_association_mem_exp_date'] = $payload['automobile_association_mem_exp_date'] ?? '';
+            $payload['automobile_association_mem_no']       = $payload['automobile_association_mem_no']       ?? '';
 
 
             // Remove Droom-specific IDs before sending to Tata AIG
             unset($payload['make_id'], $payload['model_id'], $payload['trim_id']);
-            // \Log::info($payload);
             // 4. Call Tata AIG Master Service directly
             $response = $this->tataAigService->fetchQuote($payload);
             $status = $response['success'] ? 'success' : 'failed';

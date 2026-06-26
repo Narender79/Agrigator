@@ -138,6 +138,21 @@ class TataAigMasterService
             $url = rtrim($this->baseUrl, '/') . $path;
 
             $payload = $this->sanitizePayload($payload);
+
+            $extraKeys = [
+                'vehicle_type',
+                'insurer_make_name',
+                'insurer_model_name',
+                'insurer_trim_name',
+                'insurer_make_id',
+                'insurer_model_id',
+                'insurer_trim_id',
+                'reg_no'
+            ];
+            foreach ($extraKeys as $ek) {
+                unset($payload[$ek]);
+            }
+
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $token,
                 'x-api-key' => $this->apiKey,
@@ -159,7 +174,21 @@ class TataAigMasterService
                     'errors' => $response->json()
                 ];
             }
-            $qoute = $response['data'][0];
+            if ($isTwoWheeler) {
+                $qoute = [
+                    'quote_stage' => $response['data']['quote_stage'] == 'Quote' ? "inprogress" : "completed",
+                    'pol_dlts' => $response['pol_dlts'] ?? [],
+                    'data' => ($response['data'] ?? [])
+                ];
+                if (isset($response['premium_break_up'])) {
+                    $qoute['data']['premium_break_up'] = $response['premium_break_up'];
+                }
+                if (isset($response['pol_dlts'])) {
+                    $qoute['data']['pol_dlts'] = $response['pol_dlts'];
+                }
+            } else {
+                $qoute = isset($response['data'][0]) ? $response['data'][0] : ($response['data'] ?? null);
+            }
             return [
                 'success' => true,
                 'data' => $qoute
