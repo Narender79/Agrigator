@@ -16,7 +16,7 @@ class UpdateInsurerRequest extends FormRequest
 
     public function rules(): array
     {
-        $insurerId = $this->route('insurer')?->id;
+        $insurerId = $this->route('id');
 
         return [
             'user_id' => [

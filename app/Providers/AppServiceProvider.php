@@ -2,14 +2,30 @@
 
 namespace App\Providers;
 
+use App\Repositories\InsuranceKycVerificationRepository;
+use App\Repositories\InsurerRepository;
+use App\Repositories\Interfaces\InsuranceKycVerificationRepositoryInterface;
+use App\Repositories\Interfaces\InsurerRepositoryInterface;
+use App\Repositories\Interfaces\ProposalRepositoryInterface;
 use Illuminate\Support\ServiceProvider;
 use App\Repositories\Interfaces\VehicleMappingRepositoryInterface;
 use App\Repositories\VehicleMappingRepository;
 use App\Repositories\Interfaces\QuoteRepositoryInterface;
+use App\Repositories\Interfaces\UsersInsuranceRepositoryInterface;
+use App\Repositories\ProposalRepository;
 use App\Repositories\QuoteRepository;
+use App\Repositories\UsersInsuranceRepository;
 use App\Services\InsuranceService;
+use App\Services\InsurerService;
 use App\Services\Interfaces\InsuranceServiceInterface;
+use App\Services\Interfaces\InsurerServiceInterface;
+use App\Services\Interfaces\KycServiceInterface;
+use App\Services\Interfaces\PaymentServiceInterface;
+use App\Services\Interfaces\ProposalServiceInterface;
 use App\Services\Interfaces\QuoteServiceInterface;
+use App\Services\KycService;
+use App\Services\PaymentService;
+use App\Services\ProposalService;
 use App\Services\QuoteService;
 
 class AppServiceProvider extends ServiceProvider
@@ -25,22 +41,25 @@ class AppServiceProvider extends ServiceProvider
             VehicleMappingRepository::class
         );
 
+        // Bind Quote interface & repository
         $this->app->bind(QuoteRepositoryInterface::class, QuoteRepository::class);
         $this->app->bind(QuoteServiceInterface::class, QuoteService::class);
 
         // Bind Proposal interface & repository
-        $this->app->bind(\App\Repositories\Interfaces\ProposalRepositoryInterface::class, \App\Repositories\ProposalRepository::class);
-        $this->app->bind(\App\Services\Interfaces\ProposalServiceInterface::class, \App\Services\ProposalService::class);
+        $this->app->bind(ProposalRepositoryInterface::class, ProposalRepository::class);
+        $this->app->bind(ProposalServiceInterface::class, ProposalService::class);
 
         // Binding Insurer interface and repository
-        $this->app->bind(\App\Repositories\Interfaces\InsurerRepositoryInterface::class, \App\Repositories\InsurerRepository::class);
-        $this->app->bind(\App\Repositories\Interfaces\UsersInsuranceRepositoryInterface::class, \App\Repositories\UsersInsuranceRepository::class);
+        $this->app->bind(InsurerRepositoryInterface::class, InsurerRepository::class);
+        $this->app->bind(UsersInsuranceRepositoryInterface::class, UsersInsuranceRepository::class);
 
-        $this->app->bind(\App\Repositories\Interfaces\InsuranceKycVerificationRepositoryInterface::class, \App\Repositories\InsuranceKycVerificationRepository::class);
+        $this->app->bind(InsuranceKycVerificationRepositoryInterface::class, InsuranceKycVerificationRepository::class);
+        $this->app->bind(KycServiceInterface::class, KycService::class);
 
         $this->app->bind(InsuranceServiceInterface::class, InsuranceService::class);
-        $this->app->bind(\App\Services\Interfaces\KycServiceInterface::class, \App\Services\KycService::class);
-        $this->app->bind(\App\Services\Interfaces\PaymentServiceInterface::class, \App\Services\PaymentService::class);
+
+        $this->app->bind(PaymentServiceInterface::class, PaymentService::class);
+        $this->app->bind(InsurerServiceInterface::class, InsurerService::class);
     }
 
     /**
