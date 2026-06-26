@@ -148,11 +148,11 @@ class VehicleDetailsController extends Controller
             $modelName = $data2['data']['Model'] ?? $data2['data']['model'] ?? null;
             $trimName = $data2['data']['Trim'] ?? $data2['data']['trim'] ?? $data2['data']['variant'] ?? null;
             $make = $this->mappingRepo->findMakeByName($makeName);
-            $model = $this->mappingRepo->findModelByName($modelName);
-            $trim = $this->mappingRepo->findTrimByName($trimName);
-            $makeMapping = $make ? $this->mappingRepo->findMakeMapping($insurerId, $make->id) : null;
-            $modelMapping = $model ? $this->mappingRepo->findModelMapping($insurerId, $model->id) : null;
-            $trimMapping = $trim ? $this->mappingRepo->findTrimMapping($insurerId, $trim->id) : null;
+            $model = $this->mappingRepo->findModelByName($modelName, $make->id) ?? null;
+            $trim = $this->mappingRepo->findTrimByName($trimName, $model->id) ?? null;
+            $makeMapping = ($this->mappingRepo->findMakeMapping($insurerId, $make->id) ?? null);
+            $modelMapping = ($this->mappingRepo->findModelMapping($insurerId, $model->id) ?? null);
+            $trimMapping = ($this->mappingRepo->findTrimMapping($insurerId, $trim->id) ?? null);
             $isMapped = ($makeMapping && $modelMapping && $trimMapping) ? true : false;
             // Append the mapping details and flag
             $data2['data']['is_mapped'] = $isMapped;

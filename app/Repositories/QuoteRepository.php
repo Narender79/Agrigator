@@ -65,7 +65,7 @@ class QuoteRepository implements QuoteRepositoryInterface
                 $gst  = $cgst + $sgst + $igst;
                 $netPremium = $premiumBreakup['net_premium'] ?? 0;
                 $totalPremium = $premiumBreakup['final_premium'] ?? 0;
-                $vehicleIdv = $resData['pol_dlts']['vehicle_idv'] ?? 0;
+                $vehicleIdv = $resData['pol_dlts']['vehicle_idv'] ?? $resData['data']['vehicle_idv'] ?? 0;
                 $userId = Auth::id() ?? request()->attributes->get('merchant_partner')?->user_id;
                 Quote::create([
                     'user_id'                       => $userId,

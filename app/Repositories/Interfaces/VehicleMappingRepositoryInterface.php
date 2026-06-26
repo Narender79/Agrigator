@@ -19,8 +19,8 @@ interface VehicleMappingRepositoryInterface
     public function getTrimsByModel(?string $modelCode): Collection;
 
     public function findMakeByName(?string $name): ?Make;
-    public function findModelByName(?string $name): ?VehicleModel;
-    public function findTrimByName(?string $name): ?Trim;
+    public function findModelByName(?string $name, ?int $makeId = null): ?VehicleModel;
+    public function findTrimByName(?string $name, ?int $modelId = null): ?Trim;
     public function findMakeMapping(int $insurerId, ?int $makeId): ?MakeMapping;
     public function findModelMapping(int $insurerId, ?int $modelId): ?ModelMapping;
     public function findTrimMapping(int $insurerId, ?int $trimId): ?TrimMapping;
