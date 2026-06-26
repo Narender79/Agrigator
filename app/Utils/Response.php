@@ -18,11 +18,10 @@ class Response
      * @param  int  $status
      * @return JsonResponse
      */
-    public static function success($data, string $message = "success", array $rest = [], int $status = 200): JsonResponse
+    public static function success($data, array $rest = [], int $status = 200): JsonResponse
     {
         return response()->json(array_merge([
             'code' => self::CODE_SUCCESS,
-            'message' => $message,
             'data' => $data,
         ], $rest), $status);
     }

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Exceptions\ValidationExceptions;
+use App\Exceptions\BusinessException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreInsurerRequest;
 use App\Http\Requests\Api\UpdateInsurerRequest;
@@ -18,9 +18,11 @@ class InsurerController extends Controller
         try {
             $validated = $request->validated();
 
-            $insurer = $this->insurerService->createInsurer($validated);
-
-            return Response::success($insurer, "Insurer created successfully", [], 201);
+            return Response::success(
+                $this->insurerService->createInsurer($validated),
+                ["message" => "Insurer created successfully"],
+                201
+            );
         } catch (\Exception $e) {
             return Response::exeptionResponse($e);
         }
@@ -31,12 +33,17 @@ class InsurerController extends Controller
         try {
             $validated = $request->validated();
 
-            $insurer = $this->insurerService->updateInsurer($validated, $id);
+            return Response::success(
+                $this->insurerService->updateInsurer($validated, $id),
+                [
+                    "message" => "Insurer updated successfully",
+                    'validated' => $request->all()
+                ],
+                201
+            );
+        } catch (BusinessException $e) {
 
-            return Response::success($insurer, "Insurer updated successfully", ['validated' => $request->all()], 201);
-        } catch (ValidationExceptions $e) {
-
-            return Response::validationFailed($e->getMessage());
+            return Response::failed($e->getMessage(), 404);
         } catch (\Exception $e) {
 
             return Response::exeptionResponse($e);
@@ -45,12 +52,13 @@ class InsurerController extends Controller
 
     public function showByUserId(int $userId)
     {
-        $insurer = $this->insurerService->getInsurerByUserId($userId);
+        try {
+            return Response::success($this->insurerService->getInsurerByUserId($userId));
+        } catch (BusinessException $e) {
 
-        if (! $insurer) {
-            return Response::failed('Insurer not found.', 404, ['message' => 'Insurer not found.'], 404);
+            return Response::failed($e->getMessage(), 404);
+        } catch (\Exception $e) {
+            return Response::exeptionResponse($e);
         }
-
-        return Response::success($insurer);
     }
 }

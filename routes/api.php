@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\QuoteController;
 use App\Http\Controllers\vehicleMapping\VehicleMappingController;
 use App\Http\Controllers\Api\ProposalController;
 use \App\Http\Controllers\Api\KycController;
+use App\Http\Controllers\Api\PartnerController;
 
 Route::post('/login', [User::class, 'login']);
 Route::post('/google-login', [User::class, 'login']);
@@ -20,9 +21,9 @@ Route::post('/users', [ApiUserController::class, 'store']);
 Route::match(['put', 'patch'], '/users/{user}', [ApiUserController::class, 'update']);
 Route::get('/users/{user}', [ApiUserController::class, 'show']);
 
-Route::post('/partners', 'App\\Http\\Controllers\\Api\\PartnerController@store');
-Route::match(['put', 'patch'], '/partners/{partner}', 'App\\Http\\Controllers\\Api\\PartnerController@update');
-Route::get('/partners/user/{userId}', 'App\\Http\\Controllers\\Api\\PartnerController@showByUserId');
+Route::post('/partners', [PartnerController::class, 'store']);
+Route::match(['put', 'patch'], '/partners/{id}', [PartnerController::class, 'update']);
+Route::get('/partners/user/{userId}', [PartnerController::class, 'showByUserId']);
 
 Route::post('/partner-credentials', [PartnerCredentialController::class, 'store']);
 Route::get('/partner-credentials/partner/{partnerId}', [PartnerCredentialController::class, 'showByPartnerId']);

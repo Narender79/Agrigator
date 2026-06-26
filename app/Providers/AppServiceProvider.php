@@ -6,12 +6,14 @@ use App\Repositories\InsuranceKycVerificationRepository;
 use App\Repositories\InsurerRepository;
 use App\Repositories\Interfaces\InsuranceKycVerificationRepositoryInterface;
 use App\Repositories\Interfaces\InsurerRepositoryInterface;
+use App\Repositories\Interfaces\PartnerRepositoryInterface;
 use App\Repositories\Interfaces\ProposalRepositoryInterface;
 use Illuminate\Support\ServiceProvider;
 use App\Repositories\Interfaces\VehicleMappingRepositoryInterface;
 use App\Repositories\VehicleMappingRepository;
 use App\Repositories\Interfaces\QuoteRepositoryInterface;
 use App\Repositories\Interfaces\UsersInsuranceRepositoryInterface;
+use App\Repositories\PartnerRepository;
 use App\Repositories\ProposalRepository;
 use App\Repositories\QuoteRepository;
 use App\Repositories\UsersInsuranceRepository;
@@ -20,10 +22,12 @@ use App\Services\InsurerService;
 use App\Services\Interfaces\InsuranceServiceInterface;
 use App\Services\Interfaces\InsurerServiceInterface;
 use App\Services\Interfaces\KycServiceInterface;
+use App\Services\Interfaces\PartnerServiceInterface;
 use App\Services\Interfaces\PaymentServiceInterface;
 use App\Services\Interfaces\ProposalServiceInterface;
 use App\Services\Interfaces\QuoteServiceInterface;
 use App\Services\KycService;
+use App\Services\PartnerService;
 use App\Services\PaymentService;
 use App\Services\ProposalService;
 use App\Services\QuoteService;
@@ -60,6 +64,8 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->bind(PaymentServiceInterface::class, PaymentService::class);
         $this->app->bind(InsurerServiceInterface::class, InsurerService::class);
+        $this->app->bind(PartnerServiceInterface::class, PartnerService::class);
+        $this->app->bind(PartnerRepositoryInterface::class, PartnerRepository::class);
     }
 
     /**

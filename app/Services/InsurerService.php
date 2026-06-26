@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Exceptions\ValidationExceptions;
 use App\Repositories\Interfaces\InsurerRepositoryInterface;
 use App\Services\Interfaces\InsurerServiceInterface;
 
