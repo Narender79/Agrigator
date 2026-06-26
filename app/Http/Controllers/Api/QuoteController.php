@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\BusinessException;
+use App\Exceptions\ValidationExceptions;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\SavePostQuotePaymentRequest;
 use App\Http\Requests\Api\StorePostQuoteRequest;
 use App\Services\Interfaces\QuoteServiceInterface;
 use App\Utils\Response;
 use Illuminate\Http\Request;
-use \Illuminate\Support\Facades\Validator;
 
 class QuoteController extends Controller
 {
@@ -85,7 +86,14 @@ class QuoteController extends Controller
                 );
             }
             return Response::success(data_get($result, 'data'));
+        } catch (ValidationExceptions $e) {
+
+            return Response::validationFailed($e->getMessage());
+        } catch (BusinessException $e) {
+
+            return Response::failed($e->getMessage(), $e->getStatusCode());
         } catch (\Exception $e) {
+
             return Response::exeptionResponse($e);
         }
     }
