@@ -20,7 +20,7 @@ class InsurerController extends Controller
 
             $insurer = $this->insurerService->createInsurer($validated);
 
-            return Response::success($insurer, "Insurer created successfully", [], 201);
+            return Response::success($insurer, array('message' => "Insurer created successfully"), 201);
         } catch (\Exception $e) {
             return Response::exeptionResponse($e);
         }
@@ -33,7 +33,7 @@ class InsurerController extends Controller
 
             $insurer = $this->insurerService->updateInsurer($validated, $id);
 
-            return Response::success($insurer, "Insurer updated successfully", ['validated' => $request->all()], 201);
+            return Response::success($insurer, array('message' => "Insurer updated successfully", 'validated' => $request->all()), 201);
         } catch (ValidationExceptions $e) {
 
             return Response::validationFailed($e->getMessage());
