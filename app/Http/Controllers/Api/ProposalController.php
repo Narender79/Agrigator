@@ -6,8 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StorePostProposalRequest;
 use App\Services\Interfaces\ProposalServiceInterface;
 use App\Utils\Response;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 
 class ProposalController extends Controller
 {
