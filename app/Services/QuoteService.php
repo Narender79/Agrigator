@@ -523,7 +523,7 @@ class QuoteService implements QuoteServiceInterface
             throw new ValidationExceptions('Something missing in your payload.');
         }
         $getInsuranceObj = $this->quoteRepo->checkValidQuoteID($payload['quote_id']);
-        if ($getInsuranceObj->status != 'quote_completed') {
+        if ($getInsuranceObj->status != QUOTE_COMPLETED) {
             throw new BusinessException(
                 'Your quotation is not finalized.',
                 400
@@ -539,7 +539,7 @@ class QuoteService implements QuoteServiceInterface
         }
 
         $updateData = $this->quoteRepo->updatePaymentStatus($payload);
-        if ($updateData->status != "payment_success") {
+        if ($updateData->status != PAYMENT_SUCCESS) {
             throw new BusinessException(
                 'Payment status not updated. Please try again.',
                 500

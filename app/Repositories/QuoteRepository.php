@@ -186,7 +186,7 @@ class QuoteRepository implements QuoteRepositoryInterface
         $insuranceObj->insurance_txn_start_time = now();
 
         if ($data['payment_status'] == 'success') {
-            $insuranceObj->status = "payment_success";
+            $insuranceObj->status = PAYMENT_SUCCESS;
         }
         $insuranceObj->save();
         return $insuranceObj;
