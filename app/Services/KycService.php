@@ -9,6 +9,7 @@ use App\Repositories\Interfaces\InsuranceKycVerificationRepositoryInterface;
 use \App\Services\Interfaces\PaymentServiceInterface;
 use Illuminate\Support\Facades\Auth;
 use \Illuminate\Support\Facades\Log;
+use App\Exceptions\BusinessException;
 use App\Utils\DHelper;
 use Exception;
 
@@ -66,11 +67,10 @@ class KycService implements KycServiceInterface
                     'trace_id' => null,
                     'status' => 'failed',
                 ]);
-                return [
-                    'success' => false,
-                    'message' => 'Insurer CKYC API connection failed.',
-                    'response' => $response['data']
-                ];
+                throw new BusinessException(
+                    $response['message'] ?? 'Insurer CKYC API connection failed.',
+                    400
+                );
             }
 
             // Store the KYC attempt details in database
@@ -99,11 +99,10 @@ class KycService implements KycServiceInterface
                     'session_id' => $record->insurance_unique_id,
                     'response'   => $paymentResponse
                 ]);
-                return [
-                    'success' => false,
-                    'message' => $paymentResponse['message'] ?? 'Insurer payment verification failed.',
-                    'data'    => $paymentResponse
-                ];
+                throw new BusinessException(
+                    $paymentResponse['message'] ?? 'Insurer payment verification failed.',
+                    400
+                );
             }
 
             // \Log::info($paymentResponse);
