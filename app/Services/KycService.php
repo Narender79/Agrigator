@@ -88,6 +88,9 @@ class KycService implements KycServiceInterface
                 'status' => 'success',
             ]);
 
+            $this->userInsuranceRepo->updateOrCreateByUniqueId($record->insurance_unique_id, [
+                'status' => KYC_COMPLETED,
+            ]);
 
             // Call the unified payment verification service
             $paymentResponse = $this->paymentService->verifyInsurerPayment($record);
@@ -95,9 +98,6 @@ class KycService implements KycServiceInterface
                 Log::error('Insurer payment verification failed at KYC stage', [
                     'session_id' => $record->insurance_unique_id,
                     'response'   => $paymentResponse
-                ]);
-                $this->userInsuranceRepo->updateOrCreateByUniqueId($record->insurance_unique_id, [
-                    'status' => KYC_COMPLETED,
                 ]);
                 return [
                     'success' => false,
