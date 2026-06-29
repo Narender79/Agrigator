@@ -9,6 +9,7 @@ use App\Repositories\Interfaces\InsuranceKycVerificationRepositoryInterface;
 use \App\Services\Interfaces\PaymentServiceInterface;
 use Illuminate\Support\Facades\Auth;
 use \Illuminate\Support\Facades\Log;
+use App\Utils\DHelper;
 use Exception;
 
 class KycService implements KycServiceInterface
@@ -87,9 +88,6 @@ class KycService implements KycServiceInterface
                 'status' => 'success',
             ]);
 
-            $this->userInsuranceRepo->updateOrCreateByUniqueId($record->insurance_unique_id, [
-                'status' => KYC_COMPLETED,
-            ]);
 
             // Call the unified payment verification service
             $paymentResponse = $this->paymentService->verifyInsurerPayment($record);
@@ -98,10 +96,51 @@ class KycService implements KycServiceInterface
                     'session_id' => $record->insurance_unique_id,
                     'response'   => $paymentResponse
                 ]);
+                $this->userInsuranceRepo->updateOrCreateByUniqueId($record->insurance_unique_id, [
+                    'status' => KYC_COMPLETED,
+                ]);
+                return [
+                    'success' => false,
+                    'message' => $paymentResponse['message'] ?? 'Insurer payment verification failed.',
+                    'data'    => $paymentResponse
+                ];
             }
+
+            // \Log::info($paymentResponse);
+            // Extract policy details from verification response
+            $paymentData = $paymentResponse['data'];
+            $updateData = [
+                'status' => POLICY_GENERATED,
+            ];
+            if (!empty($paymentData['policy_no'])) {
+                $updateData['policy_no'] = $paymentData['policy_no'];
+            }
+            if (!empty($paymentData['payment_id'])) {
+                $updateData['insuranc_payment_ref_no'] = $paymentData['payment_id'];
+            }
+            if (!empty($paymentResponse['policy_document']['byteStream'])) {
+                $pdfData = base64_decode($paymentResponse['policy_document']['byteStream']);
+                $dirPath = public_path('photos/policy');
+                if (!file_exists($dirPath)) {
+                    mkdir($dirPath, 0777, true);
+                }
+                $cleanPolicyNo = str_replace(['/', '\\'], '_', $paymentData['policy_no'] ?? $record->quote_id);
+                $fileName = 'policy_' . $cleanPolicyNo . '.pdf';
+                $filePath = $dirPath . '/' . $fileName;
+                file_put_contents($filePath, $pdfData);
+
+                // Construct full dynamic CDN URL via DHelper
+                $updateData['policy_url'] = DHelper::getCdnUrl('photos/policy/' . $fileName);
+            }
+
+            $this->userInsuranceRepo->updateOrCreateByUniqueId($record->insurance_unique_id, $updateData);
             return [
                 'success' => true,
-                'data' => $response['data'] // return the whole insurer response JSON
+                'data'    => [
+                    'ckyc_verification'    => $response['data'],
+                    'payment_verification' => $paymentResponse['data'],
+                    'policy_document'      => $paymentResponse['policy_document'] ?? null
+                ]
             ];
         } catch (Exception $e) {
             return [

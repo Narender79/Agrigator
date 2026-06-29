@@ -378,4 +378,50 @@ class TataAigMasterService
             ];
         }
     }
+
+    /**
+     * Download policy PDF by encrypted policy ID from Tata AIG.
+     */
+
+    public function downloadPolicy(string $encryptedPolicyId): array
+    {
+        try {
+            $token = $this->getAccessToken();
+            $path = '/motor/v1/policy-download/' . $encryptedPolicyId;
+            $url = rtrim($this->baseUrl, '/') . $path;
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $token,
+                'x-api-key'     => $this->apiKey,
+            ])->timeout($this->timeout)->get($url);
+
+            InsuranceRequestResponseLogs::insuranceRRLogs(
+                ['encrypted_policy_id' => $encryptedPolicyId],
+                $response->json(),
+                "policy-download",
+                $encryptedPolicyId
+            );
+
+            if ($response->failed()) {
+                Log::error('Tata AIG Policy Download API Failure', [
+                    'status' => $response->status(),
+                    'body'   => $response->body()
+                ]);
+                return [
+                    'success' => false,
+                    'data'    => $response->json()
+                ];
+            }
+
+            return [
+                'success' => true,
+                'data'    => $response->json()
+            ];
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'An error occurred during policy download: ' . $e->getMessage(),
+                'data'    => null
+            ];
+        }
+    }
 }

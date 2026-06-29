@@ -31,7 +31,7 @@ class ProposalService implements ProposalServiceInterface
             // 5. Store Proposal details in SQL
             $userId = Auth::id() ?? request()->attributes->get('merchant_partner')?->user_id;
 
-            $proposal = $this->proposalRepo->saveProposal($this->buildProposlCreateData($userId, $result, $payload));
+            $proposal = $this->proposalRepo->saveProposal($this->buildProposalCreateData($userId, $result, $payload));
 
             // 6. Update the users_insurance record with proposal details for the same session_id
             $sessionId = $record->insurance_unique_id;
@@ -135,7 +135,7 @@ class ProposalService implements ProposalServiceInterface
         ];
     }
 
-    private function buildProposlCreateData(int $userId, array $result, array $payload): array
+    private function buildProposalCreateData(int $userId, array $result, array $payload): array
     {
         return [
             'user_id'              => $userId,

@@ -21,7 +21,7 @@ class PaymentService implements PaymentServiceInterface
                 'office_location_code' => '122015',
                 'office_location_name' => 'Gurugram',
                 'policy_start_date'    => $record->policy_start_date ?? now()->format('Y-m-d'),
-                'payment_amount'       => (string) $record->net_premium,
+                'payment_amount'       => (string) round($record->net_premium),
                 'pan_no'               => '',
                 'payer_type'           => 'Customer',
                 'payer_id'             => '',
@@ -35,7 +35,20 @@ class PaymentService implements PaymentServiceInterface
                     : now()->format('Y-m-d H:i:s'),
             ];
 
-            return $this->tataAigService->verifyPayment($payload);
+            $response = $this->tataAigService->verifyPayment($payload);
+
+            // --- POLICY DOWNLOAD LOGIC ---
+            if (!empty($response['success']) && !empty($response['data'])) {
+                $paymentData = is_array($response['data']) && isset($response['data']['0']) ? $response['data'][0] : $response['data'];
+                $encryptedPolicyId = $paymentData['encrypted_policy_id'] ?? null;
+                if ($encryptedPolicyId) {
+                    $policyRes = $this->tataAigService->downloadPolicy($encryptedPolicyId);
+                    if (!empty($policyRes['success'])) {
+                        $response['policy_document'] = $policyRes['data'];
+                    }
+                }
+            }
+            return $response;
         } catch (Exception $e) {
             Log::error("Payment verification failed in PaymentService: " . $e->getMessage(), [
                 'insurance_id' => $record->id

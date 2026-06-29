@@ -284,7 +284,7 @@ class QuoteService implements QuoteServiceInterface
                 }
 
                 $payload['special_regno'] = $payload['special_regno'] ?? 'false';
-                $payload['no_past_pol'] = $payload['no_past_pol'] ?? 'N';
+                // $payload['no_past_pol'] = $payload['no_past_pol'] ?? 'N';
 
                 $payload['cng_lpg_cover']                 = $payload['cng_lpg_cover'] ?? 'NO';
                 $payload['vintage_car']                   = $payload['vintage_car'] ?? 'No';
@@ -547,7 +547,7 @@ class QuoteService implements QuoteServiceInterface
         }
         return [
             'success' => true,
-            'data' => "Quote payment update sussceefully."
+            'data' => "Quote payment updated successfully."
         ];
     }
 }
