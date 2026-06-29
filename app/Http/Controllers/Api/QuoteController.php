@@ -19,7 +19,7 @@ class QuoteController extends Controller
     {
         try {
             // Check validation rule
-            $validatedData = $request->validated();
+            $request->validated();
             $result = $this->quoteService->getInsurerQuote($request->all());
 
             if (isset($result['success']) && $result['success'] === false) {
@@ -33,6 +33,9 @@ class QuoteController extends Controller
             }
 
             return Response::success($result);
+        }catch (BusinessException $e) {
+
+            return Response::failed($e->getMessage(), $e->getStatusCode());
         } catch (\Exception $e) {
             return Response::exeptionResponse($e);
         }
