@@ -62,6 +62,13 @@ class PaymentService implements PaymentServiceInterface
             throw new \App\Exceptions\BusinessException('KYC verification must be completed before verifying insurer payment.', 400);
         }
 
+        if (in_array($record->status, [PAYMENT_VERIFIED, POLICY_GENERATED])) {
+            return [
+                'success' => true,
+                'message' => 'Payment is already verified.'
+            ];
+        }
+
         $paymentResponse = $this->verifyInsurerPayment($record);
 
         // If the API call itself failed, throw the actual error message
