@@ -8,14 +8,15 @@ use Override;
 
 class InsuranceKycVerificationRepository implements InsuranceKycVerificationRepositoryInterface
 {
+
+    public function __construct(private InsuranceKycVerification $insuranceKycModel) {}
+
     /**
      * Log or update a KYC verification attempt.
      */
-
-
     public function savekycVerification(array $data): InsuranceKycVerification
     {
-        return InsuranceKycVerification::updateOrCreate(
+        return $this->insuranceKycModel->updateOrCreate(
             ['session_id' => $data['session_id']],
             $data
         );
@@ -26,6 +27,6 @@ class InsuranceKycVerificationRepository implements InsuranceKycVerificationRepo
      */
     public function findLatestBySession(string $sessionId): ?InsuranceKycVerification
     {
-        return InsuranceKycVerification::where('session_id', $sessionId)->latest()->first();
+        return $this->insuranceKycModel->where('session_id', $sessionId)->latest()->first();
     }
 }

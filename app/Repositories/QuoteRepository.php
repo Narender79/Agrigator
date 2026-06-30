@@ -13,11 +13,14 @@ use Illuminate\Support\Facades\Auth;
 
 class QuoteRepository implements QuoteRepositoryInterface
 {
+
     public function __construct(
         private UsersInsurance $userInsModel,
         private VehicleHistory $vehHisModel,
         private QuoteRequest $quoteResModel,
-        private QuoteReqRes $quoteReqMongoModel
+        private QuoteReqRes $quoteReqMongoModel,
+        private InsurerQuoteResult $insurerQuoteResultModel,
+        private Quote $quoteModel
     ) {}
     /**
      * Store a new quote request/response locally inside MongoDB.
@@ -28,7 +31,7 @@ class QuoteRepository implements QuoteRepositoryInterface
     public function saveQuote(array $data): string
     {
 
-        $quote = QuoteReqRes::create([
+        $quote = $this->quoteReqMongoModel->create([
             'session_id'               => $data['session_id'] ?? null,
             'insurer_id'               => $data['insurer_id'] ?? null,
             'proposer_type'            => $data['proposer_type'] ?? null,
@@ -62,7 +65,7 @@ class QuoteRepository implements QuoteRepositoryInterface
             $totalPremium = $premiumBreakup['final_premium'] ?? 0;
             $vehicleIdv = $resData['pol_dlts']['vehicle_idv'] ?? $resData['data']['vehicle_idv'] ?? 0;
             $userId = Auth::id() ?? request()->attributes->get('merchant_partner')?->user_id;
-            Quote::create([
+            $this->quoteModel->create([
                 'user_id'                       => $userId,
                 'insurer_id'                    => $data['insurer_id'],
                 'quote_request_session_id'      => $data['session_id'] ?? null,
@@ -93,7 +96,7 @@ class QuoteRepository implements QuoteRepositoryInterface
                 'insurer_quote_ref'             => $resData['quote_id'] ?? null,
                 'source_channel'                => 'web',
             ]);
-            UsersInsurance::updateOrCreate(
+            $this->userInsModel->updateOrCreate(
                 ['insurance_unique_id' => $data['session_id']],
                 [
                     'user_id'          => $userId,
@@ -134,7 +137,7 @@ class QuoteRepository implements QuoteRepositoryInterface
      */
     public function saveInsurerResult(array $data): string
     {
-        $result = InsurerQuoteResult::create([
+        $result = $this->insurerQuoteResultModel->create([
             'session_id'       => $data['session_id'],
             'insurer_slug'     => $data['insurer_slug'],
             'insurer_name'     => $data['insurer_name'] ?? null,

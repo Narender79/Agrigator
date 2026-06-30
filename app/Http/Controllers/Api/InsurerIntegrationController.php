@@ -12,13 +12,16 @@ use Illuminate\Support\Facades\Crypt;
 
 class InsurerIntegrationController extends Controller
 {
+    public function __construct(
+        private InsurerIntegration $insurerIntegrationModel,
+    ) {}
     public function store(StoreInsurerIntegrationRequest $request)
     {
         try {
             $validated = $request->validated();
             $otherAttributes = Arr::get($validated, 'other_attributes', []);
 
-            $integration = InsurerIntegration::query()->create([
+            $integration = $this->insurerIntegrationModel->query()->create([
                 'insurer_id' => $validated['insurer_id'],
                 'api_base_url' => $validated['api_base_url'],
                 'auth_type' => $validated['auth_type'],
@@ -113,7 +116,7 @@ class InsurerIntegrationController extends Controller
 
     public function showByInsurerId($insurerId)
     {
-        $integration = InsurerIntegration::query()->where('insurer_id', $insurerId)->first();
+        $integration = $this->insurerIntegrationModel->query()->where('insurer_id', $insurerId)->first();
 
         if (!$integration) {
             return Response::failed('Insurer integration updated successfully.', 404);

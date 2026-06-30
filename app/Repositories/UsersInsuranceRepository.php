@@ -7,10 +7,13 @@ use App\Repositories\Interfaces\UsersInsuranceRepositoryInterface;
 
 class UsersInsuranceRepository implements UsersInsuranceRepositoryInterface
 {
+    public function __construct(
+        private UsersInsurance $userInsModel
+    ) {}
 
     public function findByProposalIdOrQuoteNo(string $proposalId, ?string $quoteNo): ?UsersInsurance
     {
-        return UsersInsurance::where('proposal_id', $proposalId)
+        return $this->userInsModel->where('proposal_id', $proposalId)
             ->when($quoteNo, function ($query, $quoteNo) {
                 return $query->orWhere('quote_no', $quoteNo);
             })
@@ -19,7 +22,7 @@ class UsersInsuranceRepository implements UsersInsuranceRepositoryInterface
 
     public function updateOrCreateByUniqueId(string $uniqueId, array $data): UsersInsurance
     {
-        return UsersInsurance::updateOrCreate(
+        return $this->userInsModel->updateOrCreate(
             ['insurance_unique_id' => $uniqueId],
             $data
         );
@@ -27,6 +30,6 @@ class UsersInsuranceRepository implements UsersInsuranceRepositoryInterface
 
     public function findByQuoteId(string $quoteId): ?UsersInsurance
     {
-        return UsersInsurance::where('quote_id', $quoteId)->first();
+        return $this->userInsModel->where('quote_id', $quoteId)->first();
     }
 }

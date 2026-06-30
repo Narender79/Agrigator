@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Log;
 use App\Repositories\Interfaces\UsersInsuranceRepositoryInterface;
 // use League\Uri\Contracts\UserInfoInterface;
 use App\Utils\DHelper;
+use \App\Exceptions\BusinessException;
 use Exception;
 
 class PaymentService implements PaymentServiceInterface
@@ -55,7 +56,7 @@ class PaymentService implements PaymentServiceInterface
     {
         $record = $this->usersInsuranceRepo->findByQuoteId($quoteId);
         if (!$record) {
-            throw new \App\Exceptions\BusinessException('Insurance record not found for the given Quote ID.', 404);
+            throw new BusinessException('Insurance record not found for the given Quote ID.', 404);
         }
 
         if (in_array($record->status, [PAYMENT_VERIFIED, POLICY_GENERATED])) {
@@ -66,14 +67,14 @@ class PaymentService implements PaymentServiceInterface
         }
 
         if ($record->status !== KYC_COMPLETED) {
-            throw new \App\Exceptions\BusinessException('KYC verification must be completed before verifying insurer payment.', 400);
+            throw new BusinessException('KYC verification must be completed before verifying insurer payment.', 400);
         }
 
         $paymentResponse = $this->verifyInsurerPayment($record);
 
         // If the API call itself failed, throw the actual error message
         if (!$paymentResponse['success']) {
-            throw new \App\Exceptions\BusinessException(
+            throw new BusinessException(
                 $paymentResponse['message'] ?? 'Payment verification failed at insurer side.',
                 400
             );
@@ -112,12 +113,12 @@ class PaymentService implements PaymentServiceInterface
     {
         $record = $this->usersInsuranceRepo->findByQuoteId($quoteId);
         if (!$record) {
-            throw new \App\Exceptions\BusinessException('Insurance record not found for the given Quote ID.', 404);
+            throw new BusinessException('Insurance record not found for the given Quote ID.', 404);
         }
 
         // Auth check for Policy Download
         if (!in_array($record->status, [PAYMENT_VERIFIED, POLICY_GENERATED])) {
-            throw new \App\Exceptions\BusinessException('Insurer payment must be verified before downloading policy.', 400);
+            throw new BusinessException('Insurer payment must be verified before downloading policy.', 400);
         }
 
 
@@ -135,16 +136,16 @@ class PaymentService implements PaymentServiceInterface
         }
         // 2. Fetch policy document from Tata AIG API
         if (empty($record->encrypted_policy_id)) {
-            throw new \App\Exceptions\BusinessException('Encrypted policy ID is missing.', 400);
+            throw new BusinessException('Encrypted policy ID is missing.', 400);
         }
         $policyRes = $this->tataAigService->downloadPolicy($record->encrypted_policy_id);
         if (!$policyRes['success'] || empty($policyRes['data']['byteStream'])) {
-            throw new \App\Exceptions\BusinessException('Policy document is not available yet from insurer.', 400);
+            throw new BusinessException('Policy document is not available yet from insurer.', 400);
         }
         // 3. Save PDF to public disk
         $pdfData = base64_decode($policyRes['data']['byteStream']);
         if ($pdfData === false || empty($pdfData)) {
-            throw new \App\Exceptions\BusinessException('Failed to decode the policy document stream.', 500);
+            throw new BusinessException('Failed to decode the policy document stream.', 500);
         }
         $dirPath = public_path('photos/policy');
         if (!file_exists($dirPath)) {

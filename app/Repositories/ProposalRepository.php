@@ -7,9 +7,11 @@ use App\Models\Insurance\Proposal;
 
 class ProposalRepository implements ProposalRepositoryInterface
 {
+    public function __construct(private Proposal $proposalModel) {}
+
     public function saveProposal(array $data): Proposal
     {
-        return Proposal::updateOrCreate([
+        return $this->proposalModel->updateOrCreate([
             'insurer_proposal_ref' => $data['insurer_proposal_ref'], // lookup condition
         ], $data);
     }

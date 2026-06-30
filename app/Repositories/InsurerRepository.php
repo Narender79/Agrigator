@@ -9,21 +9,27 @@ use App\Repositories\Interfaces\InsurerRepositoryInterface;
 
 class InsurerRepository implements InsurerRepositoryInterface
 {
+
+    public function __construct(
+        private InsurerIntegration $insurerIntegrationModel,
+        private Insurer $insurerModel
+    ) {}
+
     public function getActiveByName(string $name): ?Insurer
     {
-        return Insurer::where('company_name', $name)
+        return $this->insurerModel->where('company_name', $name)
             ->where('status', 'active')
             ->first();
     }
 
     public function getIntegrationByInsurerId(int $insurerId): ?InsurerIntegration
     {
-        return InsurerIntegration::where('insurer_id', $insurerId)->first();
+        return $this->insurerIntegrationModel->where('insurer_id', $insurerId)->first();
     }
 
     public function createInsurer(array $data): array
     {
-        $insurer = Insurer::query()->create($this->buildInsurerCreateData($data));
+        $insurer = $this->insurerModel->query()->create($this->buildInsurerCreateData($data));
 
         return $this->presentInsurer($insurer->fresh());
     }
@@ -65,7 +71,7 @@ class InsurerRepository implements InsurerRepositoryInterface
 
     public function showInsurerByUserId(int $userId, bool $objReturn = true)
     {
-        $insurer =  Insurer::query()->where('user_id', $userId)->first();
+        $insurer =  $this->insurerModel->query()->where('user_id', $userId)->first();
         if (!$insurer) {
             throw new BusinessException("Insurer not found");
         }
@@ -77,7 +83,7 @@ class InsurerRepository implements InsurerRepositoryInterface
 
     public function getInsurer(int $id, bool $objReturn = true)
     {
-        $insurer = Insurer::findOrFail($id);
+        $insurer = $this->insurerModel->findOrFail($id);
 
         if (!$insurer) {
             throw new BusinessException("Insurer not found");
