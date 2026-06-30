@@ -16,7 +16,7 @@ class PaymentService implements PaymentServiceInterface
 {
     public function __construct(private readonly TataAigMasterService $tataAigService, private readonly UsersInsuranceRepositoryInterface $usersInsuranceRepo) {}
 
-    public function verifyInsurerPayment(UsersInsurance $record): array
+    private function verifyInsurerPayment(UsersInsurance $record): array
     {
         try {
             $payload = [
@@ -134,28 +134,11 @@ class PaymentService implements PaymentServiceInterface
                 ];
             }
         }
-        // 2. Fetch policy document from Tata AIG API
-        if (empty($record->encrypted_policy_id)) {
-            throw new BusinessException('Encrypted policy ID is missing.', 400);
-        }
-        $policyRes = $this->tataAigService->downloadPolicy($record->encrypted_policy_id);
-        if (!$policyRes['success'] || empty($policyRes['data']['byteStream'])) {
-            throw new BusinessException('Policy document is not available yet from insurer.', 400);
-        }
-        // 3. Save PDF to public disk
-        $pdfData = base64_decode($policyRes['data']['byteStream']);
-        if ($pdfData === false || empty($pdfData)) {
-            throw new BusinessException('Failed to decode the policy document stream.', 500);
-        }
-        $dirPath = public_path('photos/policy');
-        if (!file_exists($dirPath)) {
-            mkdir($dirPath, 0777, true);
-        }
-        $cleanPolicyNo = str_replace(['/', '\\'], '_', $record->policy_no ?? $record->quote_id);
-        $fileName = 'policy_' . $cleanPolicyNo . '.pdf';
-        file_put_contents($dirPath . '/' . $fileName, $pdfData);
-        $cdnUrl = DHelper::getCdnUrl('photos/policy/' . $fileName);
-        // 4. Update status to POLICY_GENERATED
+
+        // 2. Fetch and save policy document from insurer
+        $cdnUrl = $this->fetchAndSavePolicyPdf($record);
+
+        // 3. Update status to POLICY_GENERATED
         $this->usersInsuranceRepo->updateOrCreateByUniqueId($record->insurance_unique_id, [
             'status'     => POLICY_GENERATED,
             'policy_url' => $cdnUrl
@@ -165,5 +148,40 @@ class PaymentService implements PaymentServiceInterface
             'message' => 'Policy document downloaded successfully.',
             'cdn_url' => $cdnUrl
         ];
+    }
+    /**
+     * Fetch the policy document from the insurer and save it locally.
+     *
+     * @param UsersInsurance $record
+     * @return string The public CDN URL of the saved PDF
+     */
+    private function fetchAndSavePolicyPdf(UsersInsurance $record): string
+    {
+        // 2. Fetch policy document from Tata AIG API
+        if (empty($record->encrypted_policy_id)) {
+            throw new BusinessException('Encrypted policy ID is missing.', 400);
+        }
+
+        $policyRes = $this->tataAigService->downloadPolicy($record->encrypted_policy_id);
+        if (!$policyRes['success'] || empty($policyRes['data']['byteStream'])) {
+            throw new BusinessException('Policy document is not available yet from insurer.', 400);
+        }
+
+        // 3. Save PDF to public disk
+        $pdfData = base64_decode($policyRes['data']['byteStream']);
+        if ($pdfData === false || empty($pdfData)) {
+            throw new BusinessException('Failed to decode the policy document stream.', 500);
+        }
+
+        $dirPath = public_path('photos/policy');
+        if (!file_exists($dirPath)) {
+            mkdir($dirPath, 0777, true);
+        }
+
+        $cleanPolicyNo = str_replace(['/', '\\'], '_', $record->policy_no ?? $record->quote_id);
+        $fileName = 'policy_' . $cleanPolicyNo . '.pdf';
+        file_put_contents($dirPath . '/' . $fileName, $pdfData);
+
+        return DHelper::getCdnUrl('photos/policy/' . $fileName);
     }
 }
