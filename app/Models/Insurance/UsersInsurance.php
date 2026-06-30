@@ -51,6 +51,8 @@ class UsersInsurance extends Model
         'quotes_mail',
         'proposal_mail',
         'aggregator_name',
+        'encrypted_policy_id',
+        'encrypted_policy_no',
     ];
 
     public function quote(): HasOne

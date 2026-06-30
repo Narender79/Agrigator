@@ -92,53 +92,18 @@ class KycService implements KycServiceInterface
                 'status' => KYC_COMPLETED,
             ]);
 
-            // Call the unified payment verification service
-            $paymentResponse = $this->paymentService->verifyInsurerPayment($record);
-            if (!$paymentResponse['success']) {
-                Log::error('Insurer payment verification failed at KYC stage', [
-                    'session_id' => $record->insurance_unique_id,
-                    'response'   => $paymentResponse
-                ]);
-                throw new BusinessException(
-                    $paymentResponse['message'] ?? 'Insurer payment verification failed.',
-                    400
-                );
-            }
+            // 5. Call Payment Verification Service (Sets status to PAYMENT_VERIFIED)
+            $paymentResponse = $this->paymentService->verifyInsurerPaymentByQuoteId($record->quote_id);
 
-            // \Log::info($paymentResponse);
-            // Extract policy details from verification response
-            $paymentData = $paymentResponse['data'];
-            $updateData = [
-                'status' => POLICY_GENERATED,
-            ];
-            if (!empty($paymentData['policy_no'])) {
-                $updateData['policy_no'] = $paymentData['policy_no'];
-            }
-            if (!empty($paymentData['payment_id'])) {
-                $updateData['insuranc_payment_ref_no'] = $paymentData['payment_id'];
-            }
-            if (!empty($paymentResponse['policy_document']['byteStream'])) {
-                $pdfData = base64_decode($paymentResponse['policy_document']['byteStream']);
-                $dirPath = public_path('photos/policy');
-                if (!file_exists($dirPath)) {
-                    mkdir($dirPath, 0777, true);
-                }
-                $cleanPolicyNo = str_replace(['/', '\\'], '_', $paymentData['policy_no'] ?? $record->quote_id);
-                $fileName = 'policy_' . $cleanPolicyNo . '.pdf';
-                $filePath = $dirPath . '/' . $fileName;
-                file_put_contents($filePath, $pdfData);
+            // 6. Call Policy Download Service (Sets status to POLICY_GENERATED)
+            $policyResponse = $this->paymentService->downloadPolicyByQuoteId($record->quote_id);
 
-                // Construct full dynamic CDN URL via DHelper
-                $updateData['policy_url'] = DHelper::getCdnUrl('photos/policy/' . $fileName);
-            }
-
-            $this->userInsuranceRepo->updateOrCreateByUniqueId($record->insurance_unique_id, $updateData);
             return [
                 'success' => true,
                 'data'    => [
                     'ckyc_verification'    => $response['data'],
-                    'payment_verification' => $paymentResponse['data'],
-                    'policy_document'      => $paymentResponse['policy_document'] ?? null
+                    'payment_verification' => $paymentResponse['data'] ?? null,
+                    'policy_document'      => $policyResponse ?? null
                 ]
             ];
         } catch (Exception $e) {

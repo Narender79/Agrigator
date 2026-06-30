@@ -13,6 +13,7 @@ use App\Http\Controllers\vehicleMapping\VehicleMappingController;
 use App\Http\Controllers\Api\ProposalController;
 use \App\Http\Controllers\Api\KycController;
 use App\Http\Controllers\Api\PartnerController;
+use App\Http\Controllers\Api\PaymentController;
 
 Route::post('/login', [User::class, 'login']);
 Route::post('/google-login', [User::class, 'login']);
@@ -57,6 +58,8 @@ Route::middleware('merchant.api')->group(function () {
             Route::get("get-quotes/{quoteId}", 'getQuotesByQuoteId');
         });
     });
+    Route::post('/insurance/verify-insurer-payment', [PaymentController::class, 'verifyInsurerPayment']);
+    Route::post('/insurance/policy/download', [PaymentController::class, 'downloadPolicy']);
 });
 
 Route::post('/login', [User::class, 'login']);

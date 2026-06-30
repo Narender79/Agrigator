@@ -15,4 +15,6 @@ interface PaymentServiceInterface
      */
 
     public function verifyInsurerPayment(UsersInsurance $record): array;
+    public function verifyInsurerPaymentByQuoteId(string $quoteId): array;
+    public function downloadPolicyByQuoteId(string $quoteId): array;
 }
