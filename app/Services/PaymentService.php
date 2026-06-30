@@ -58,15 +58,15 @@ class PaymentService implements PaymentServiceInterface
             throw new \App\Exceptions\BusinessException('Insurance record not found for the given Quote ID.', 404);
         }
 
-        if ($record->status !== KYC_COMPLETED) {
-            throw new \App\Exceptions\BusinessException('KYC verification must be completed before verifying insurer payment.', 400);
-        }
-
         if (in_array($record->status, [PAYMENT_VERIFIED, POLICY_GENERATED])) {
             return [
                 'success' => true,
                 'message' => 'Payment is already verified.'
             ];
+        }
+
+        if ($record->status !== KYC_COMPLETED) {
+            throw new \App\Exceptions\BusinessException('KYC verification must be completed before verifying insurer payment.', 400);
         }
 
         $paymentResponse = $this->verifyInsurerPayment($record);
