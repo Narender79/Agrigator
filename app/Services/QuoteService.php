@@ -9,6 +9,7 @@ use App\Repositories\Interfaces\QuoteRepositoryInterface;
 use App\Services\TataAigMasterService;
 use App\Repositories\Interfaces\InsurerRepositoryInterface;
 use App\Repositories\Interfaces\VehicleMappingRepositoryInterface;
+use App\Models\Insurance\UsersInsurance;
 use \App\Utils\Logger;
 
 class QuoteService implements QuoteServiceInterface
@@ -58,7 +59,8 @@ class QuoteService implements QuoteServiceInterface
         private readonly QuoteRepositoryInterface $quoteRepo,
         private readonly TataAigMasterService $tataAigService,
         InsurerRepositoryInterface $insurerRepo,
-        VehicleMappingRepositoryInterface $vehicleMappingRepo
+        VehicleMappingRepositoryInterface $vehicleMappingRepo,
+        private UsersInsurance $UsersInsuranceModel
     ) {
         $this->insurerRepo = $insurerRepo;
         $this->vehicleMappingRepo = $vehicleMappingRepo;
@@ -66,6 +68,10 @@ class QuoteService implements QuoteServiceInterface
 
     public function getInsurerQuote(array $payload): array
     {
+
+        // checking does this vehical have policy or not on our end
+        $this->checkActivePolicy($payload['reg_no'] ?? null);
+
         // 1. Resolve Insurer
         $insurer = $this->insurerRepo->getActiveByName('TATA AIG GENERAL INSURANCE');
 
@@ -560,5 +566,41 @@ class QuoteService implements QuoteServiceInterface
             'success' => true,
             'data' => "Quote payment updated successfully."
         ];
+    }
+
+    /**
+     * Check if the vehicle already has an active policy generated in the system.
+     *
+     * @param string|null $regNo
+     * @throws BusinessException
+     * @return void
+     */
+    private function checkActivePolicy(?string $regNo): Void
+    {
+        $formattedRegNo = strtoupper(str_replace([' ', '-'], '', $regNo ?? ''));
+        // Skip check for empty or temporary/new registration numbers
+
+        if (empty($formattedRegNo)) {
+            return;
+        }
+        // Find any record with a policy number matching the registration number
+        $existingPolicy = $this->UsersInsuranceModel->where('registration_no', $formattedRegNo)
+            ->whereNotNull('policy_no')
+            ->where('policy_no', '!=', '')
+            ->first();
+
+        if ($existingPolicy) {
+            $startDate = \Carbon\Carbon::parse($existingPolicy->policy_start_date);
+
+            // Standard motor policies are valid for 1 year
+            $expirationDate = $startDate->copy()->addYear();
+            // Only block if the current time is before the policy's expiration date
+            if (now()->lessThan($expirationDate)) {
+                throw new BusinessException(
+                    "An active policy ({$existingPolicy->policy_no}) already exists for this vehicle. Quote cannot be created.",
+                    400
+                );
+            }
+        }
     }
 }
