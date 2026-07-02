@@ -28,11 +28,23 @@ class KycService implements KycServiceInterface
             // 1. Fetch record from users_insurance using quote_id
             $record = $this->userInsuranceRepo->findByQuoteId($quoteId);
 
+            if (!$record) {
+                throw new BusinessException('Insurance record not found for the given Quote ID.', 404);
+            }
+
+            if (in_array($record->status, [KYC_COMPLETED, PAYMENT_VERIFIED, POLICY_GENERATED])) {
+                $kycProcessStatus = $record->status;
+                throw new BusinessException(
+                    'CKYC already done.',
+                    400
+                );
+            }
+
             // 2. Auth check: Ensure proposal is completed
-            if (!$record || $record->status !== PROPOSAL_COMPLETED) {
+            if ($record->status !== PROPOSAL_COMPLETED) {
                 return [
                     'success' => false,
-                    'message' => 'KYC is unauthorized. Proposal has not been completed.'
+                    'errors' => 'KYC is unauthorized. Proposal has not been completed.'
                 ];
             }
 
@@ -80,7 +92,8 @@ class KycService implements KycServiceInterface
                 'data'    => [
                     'ckyc_verification'    => $response['data'],
                     'payment_verification' => $paymentResponse['data'] ?? null,
-                    'policy_document'      => $policyResponse ?? null
+                    'policy_document'      => $policyResponse ?? null,
+                    'kyc_process_status'      => $record->status
                 ]
             ];
         } catch (Exception $e) {
@@ -94,7 +107,7 @@ class KycService implements KycServiceInterface
         }
     }
 
-    private function buildKYCData(int $userId, $record, string $maskedId, string $idHash, string $customerName, bool $ckycSuccess = false, string $status = "failed", string $traceId = "")
+    private function buildKYCData(int $userId, $record, string $maskedId, string $idHash, string $customerName, bool $ckycSuccess = false, string $status = "failed", string $traceId = ""): array
     {
         return [
             'user_id' => $userId,
