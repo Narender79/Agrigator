@@ -28,7 +28,7 @@ class KycController extends Controller
             $result = $this->kycService->verifyKyc($request->all());
 
             if (isset($result['success']) && $result['success'] === false) {
-                return Response::failed(data_get($result, 'message', 'KYC verification failed.'), 400, [], 400);
+                return Response::failed(data_get($result, 'errors', 'KYC verification failed.'), 400, data_get($result, 'data', []), 400);
             }
             return Response::success(data_get($result, 'data'));
         } catch (\Exception $e) {
