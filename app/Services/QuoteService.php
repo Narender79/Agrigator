@@ -158,7 +158,7 @@ class QuoteService implements QuoteServiceInterface
                 'payload' => $payload,
                 'response' => $response
             ]);
-            throw new BusinessException($response['errors'] ?? $errorMessage, 400);
+            throw new BusinessException($response['errors']['message_txt'] ?? $errorMessage, 400);
         }
 
         $result = $response['data'];
