@@ -721,19 +721,48 @@ class QuoteService implements QuoteServiceInterface
 
         // 1. Calculate TP start and end dates based on Registration Date (dor)
         if (!empty($payload['dor'])) {
+            $dorDate = null;
             try {
                 $dorDate = \Carbon\Carbon::parse($payload['dor']);
-                
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning("Failed to parse registration date (dor) for Standalone OD bundle TP calculation: " . ($payload['dor'] ?? ''));
+            }
+
+            if ($dorDate) {
+                $yearsLimit = ($vehicleType === '2w') ? 5 : 3;
+                $bundleTpEndDate = $dorDate->copy()->addYears($yearsLimit)->subDay();
+                $newPolicyEndDate = \Carbon\Carbon::parse($payload['pol_start_date'] ?? now()->format('Y-m-d'))->copy()->addYear()->subDay();
+
+                if ($newPolicyEndDate->greaterThan($bundleTpEndDate)) {
+                    $isFinalize = isset($payload['__finalize']) && $this->isTruthy($payload['__finalize']);
+
+                    if ($isFinalize) {
+                        // Throw the error only during finalization stage
+                        throw new BusinessException(
+                            "Standalone Own Damage (OD) plan is not allowed because the new policy end date ({$newPolicyEndDate->format('Y-m-d')}) exceeds the vehicle's bundle Third Party (TP) end date ({$bundleTpEndDate->format('Y-m-d')}). Please opt for a Package Policy instead.",
+                            400
+                        );
+                    } else {
+                        // Fallback to Package Policy during the quoting stage (non-finalize)
+                        if ($vehicleType === '2w') {
+                            $payload['plan_type'] = 'Package (1 year OD + 1 year TP)';
+                            $payload['pol_tenure'] = '1';
+                        } else {
+                            $payload['pol_plan_id'] = '02'; // Package Policy (1 Year OD + 1 Year TP)
+                        }
+
+                        // Return early to bypass further Standalone OD calculations
+                        return;
+                    }
+                }
+
                 if (empty($payload['ble_tp_start'])) {
                     $payload['ble_tp_start'] = $dorDate->format('Y-m-d');
                 }
-                
+
                 if (empty($payload['ble_tp_end'])) {
-                    $years = ($vehicleType === '2w') ? 5 : 3;
-                    $payload['ble_tp_end'] = $dorDate->copy()->addYears($years)->subDay()->format('Y-m-d');
+                    $payload['ble_tp_end'] = $bundleTpEndDate->format('Y-m-d');
                 }
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::warning("Failed to parse registration date (dor) for Standalone OD bundle TP calculation: " . ($payload['dor'] ?? ''));
             }
         }
 
