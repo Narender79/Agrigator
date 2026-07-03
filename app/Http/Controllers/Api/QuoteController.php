@@ -34,8 +34,8 @@ class QuoteController extends Controller
 
             return Response::success($result);
         }catch (BusinessException $e) {
-
-            return Response::failed($e->getMessage(), $e->getStatusCode());
+ 
+            return Response::failed($e->getMessage(), $e->getStatusCode(), [], $e->getStatusCode());
         } catch (\Exception $e) {
             return Response::exeptionResponse($e);
         }
@@ -94,8 +94,8 @@ class QuoteController extends Controller
 
             return Response::validationFailed($e->getMessage());
         } catch (BusinessException $e) {
-
-            return Response::failed($e->getMessage(), $e->getStatusCode());
+ 
+            return Response::failed($e->getMessage(), $e->getStatusCode(), [], $e->getStatusCode());
         } catch (\Exception $e) {
 
             return Response::exeptionResponse($e);

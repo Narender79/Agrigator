@@ -303,10 +303,10 @@ class QuoteService implements QuoteServiceInterface
     }
     private function buildTwoWheelerPayloads(array &$payload): void
     {
+        $this->calculateBundleTpDetails($payload, '2w');
 
         // 1. Map and format PA Owner Cover
-        $paOwner = strtolower($payload['pa_owner'] ?? '');
-        if ($paOwner === 'true' || $paOwner === 'yes' || $paOwner === '1') {
+        if ($this->isTruthy($payload['pa_owner'] ?? '')) {
             $payload['pa_owner'] = 'true';
             $payload['pa_owner_tenure'] = $payload['pa_owner_tenure'] ?? '1';
             $payload['cpa_ten'] = $payload['pa_owner_tenure'];
@@ -327,13 +327,9 @@ class QuoteService implements QuoteServiceInterface
         $payload['prev_pol_type'] = $payload['prev_pol_type'] ?? 'PackagePolicy';
 
         if (empty($payload['prev_pol_start_date'])) {
-            $polStart = new \DateTime($payload['pol_start_date']);
-            $prevEnd = clone $polStart;
-            $prevEnd->modify('-1 day');
-            $prevStart = clone $prevEnd;
-            $prevStart->modify('-1 year +1 day');
-            $payload['prev_pol_start_date'] = $prevStart->format('Y-m-d');
-            $payload['prev_pol_end_date'] = $prevEnd->format('Y-m-d');
+            $dates = $this->calculatePreviousPolicyDates($payload['pol_start_date']);
+            $payload['prev_pol_start_date'] = $dates['prev_pol_start_date'];
+            $payload['prev_pol_end_date']   = $dates['prev_pol_end_date'];
         }
 
         // 3. Default other covers required by the 2W API schema to 'false'
@@ -358,25 +354,22 @@ class QuoteService implements QuoteServiceInterface
             $payload['__finalize'] = (string) $payload['__finalize'];
         }
         if (isset($payload['no_past_pol'])) {
-            $payload['no_past_pol'] = in_array(strtolower((string) $payload['no_past_pol']), ['true', 'y', 'yes', '1']) ? 'true' : 'false';
+            $payload['no_past_pol'] = $this->isTruthy($payload['no_past_pol']) ? 'true' : 'false';
         }
         if (isset($payload['claim_last'])) {
-            $payload['claim_last'] = in_array(strtolower((string) $payload['claim_last']), ['true', 'y', 'yes', '1']) ? 'true' : 'false';
+            $payload['claim_last'] = $this->isTruthy($payload['claim_last']) ? 'true' : 'false';
         }
 
         $payload['dep_reimb'] = $payload['dep_reimb'] ?? 'true';
         $payload['no_past_pol'] = $payload['no_past_pol'] ?? 'false';
 
-        $payload['cng_lpg_cover']                 = $payload['cng_lpg_cover'] ?? 'false';
-        $payload['vintage_car']                   = $payload['vintage_car'] ?? 'false';
-        $payload['ncb_protection']                = $payload['ncb_protection'] ?? 'false';
-        $payload['load_fibre']                    = $payload['load_fibre'] ?? 'false';
-        $payload['load_imported']                 = $payload['load_imported'] ?? 'false';
-        $payload['load_tuition']                  = $payload['load_tuition'] ?? 'false';
+        $this->initializeStandardCovers($payload, '2w');
     }
 
     private function buildFourWheelerPayloads(array &$payload): void
     {
+        $this->calculateBundleTpDetails($payload, '4w');
+
         if (isset($payload['pol_plan_id'])) {
             $polPlanId = $payload['pol_plan_id'];
             // 1. Map the pol_plan_variant string
@@ -410,14 +403,9 @@ class QuoteService implements QuoteServiceInterface
                     $tpEnd->modify('+3 years -1 day');
                     $payload['ble_tp_end'] = $tpEnd->format('Y-m-d');
                 } else if ($polPlanId == '05') {
-                    $payload['ble_tp_start'] = $payload['prev_pol_start_date'] ?? '';
-                    $payload['ble_tp_end'] = $payload['prev_pol_end_date'] ?? '';
-                    $prevEnd = clone $polStart;
-                    $prevEnd->modify('-1 day');
-                    $prevStart = clone $prevEnd;
-                    $prevStart->modify('-1 year +1 day');
-                    $payload['prev_pol_start_date'] = $prevStart->format('Y-m-d');
-                    $payload['prev_pol_end_date'] = $prevEnd->format('Y-m-d');
+                    $dates = $this->calculatePreviousPolicyDates($payload['pol_start_date']);
+                    $payload['prev_pol_start_date'] = $dates['prev_pol_start_date'];
+                    $payload['prev_pol_end_date']   = $dates['prev_pol_end_date'];
                 }
             }
 
@@ -426,8 +414,7 @@ class QuoteService implements QuoteServiceInterface
                 $payload['pa_owner'] = 'No';
                 $payload['pa_owner_tenure'] = '';
             } else {
-                $paOwner = strtolower($payload['pa_owner'] ?? '');
-                if ($paOwner === 'true' || $paOwner === 'yes' || $paOwner === '1') {
+                if ($this->isTruthy($payload['pa_owner'] ?? '')) {
                     $payload['pa_owner'] = 'Yes';
                     $payload['pa_owner_tenure'] = $payload['pa_owner_tenure'] ?? '1';
                 } else {
@@ -478,12 +465,7 @@ class QuoteService implements QuoteServiceInterface
 
         $payload['special_regno'] = $payload['special_regno'] ?? 'false';
 
-        $payload['cng_lpg_cover']                 = $payload['cng_lpg_cover'] ?? 'NO';
-        $payload['vintage_car']                   = $payload['vintage_car'] ?? 'No';
-        $payload['ncb_protection']                = $payload['ncb_protection'] ?? 'No';
-        $payload['load_fibre']                    = $payload['load_fibre'] ?? 'No';
-        $payload['load_imported']                 = $payload['load_imported'] ?? 'No';
-        $payload['load_tuition']                  = $payload['load_tuition'] ?? 'No';
+        $this->initializeStandardCovers($payload, '4w');
     }
 
     private function setDefaultPayloadValues(array &$payload): void
@@ -608,7 +590,7 @@ class QuoteService implements QuoteServiceInterface
     }
 
     /**
-     * Check if the vehicle already has an active policy generated in the system.
+     * Check if the vehicle already has an active policy generated in the system or externally.
      *
      * @param string|null $regNo
      * @throws BusinessException
@@ -618,11 +600,11 @@ class QuoteService implements QuoteServiceInterface
     {
         $formattedRegNo = strtoupper(str_replace([' ', '-'], '', $regNo ?? ''));
         // Skip check for empty or temporary/new registration numbers
-
         if (empty($formattedRegNo)) {
             return;
         }
-        // Find any record with a policy number matching the registration number
+
+        // 1. Check database for policy generated on our end
         $existingPolicy = $this->UsersInsuranceModel->where('registration_no', $formattedRegNo)
             ->whereNotNull('policy_no')
             ->where('policy_no', '!=', '')
@@ -630,10 +612,8 @@ class QuoteService implements QuoteServiceInterface
 
         if ($existingPolicy) {
             $startDate = \Carbon\Carbon::parse($existingPolicy->policy_start_date);
-
-            // Standard motor policies are valid for 1 year
             $expirationDate = $startDate->copy()->addYear();
-            // Only block if the current time is before the policy's expiration date
+
             if (now()->lessThan($expirationDate)) {
                 $daysRemaining = now()->diffInDays($expirationDate);
                 if ($daysRemaining > 90) {
@@ -644,5 +624,155 @@ class QuoteService implements QuoteServiceInterface
                 }
             }
         }
+
+        // 2. Check vehicle RC history for external policy validity
+        $history = app(\App\Models\VehicleHistory::class)
+            ->where('rc_number', strtolower($formattedRegNo))
+            ->latest('_id')
+            ->first();
+
+        if ($history && !empty($history->response['insurance_upto'])) {
+            $insuranceUptoStr = $history->response['insurance_upto'];
+            if (strtoupper(trim($insuranceUptoStr)) !== 'NA') {
+                $expirationDate = null;
+                try {
+                    $expirationDate = \Carbon\Carbon::parse($insuranceUptoStr);
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::warning("Failed parsing vehicle history insurance expiry date: {$insuranceUptoStr}");
+                }
+
+                if ($expirationDate && now()->lessThan($expirationDate)) {
+                    $daysRemaining = now()->diffInDays($expirationDate);
+                    if ($daysRemaining > 90) {
+                        throw new BusinessException(
+                            "An active policy (expires on {$insuranceUptoStr}) already exists for this vehicle with {$daysRemaining} days remaining. Renewal is only allowed within 90 days of expiration.",
+                            400
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Calculate default start and end dates for the previous policy (exactly 1 year prior).
+     */
+    private function calculatePreviousPolicyDates(string $polStartDate): array
+    {
+        $polStart = new \DateTime($polStartDate);
+        $prevEnd = clone $polStart;
+        $prevEnd->modify('-1 day');
+        $prevStart = clone $prevEnd;
+        $prevStart->modify('-1 year +1 day');
+
+        return [
+            'prev_pol_start_date' => $prevStart->format('Y-m-d'),
+            'prev_pol_end_date'   => $prevEnd->format('Y-m-d')
+        ];
+    }
+
+    /**
+     * Determine if a value is semantically true.
+     */
+    private function isTruthy($value): bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+        return in_array(strtolower((string) $value), ['true', 'yes', '1', 'y']);
+    }
+
+    /**
+     * Initialize standard cover defaults based on vehicle type.
+     */
+    private function initializeStandardCovers(array &$payload, string $vehicleType): void
+    {
+        $defaultValue = ($vehicleType === '2w') ? 'false' : 'No';
+
+        $covers = [
+            'cng_lpg_cover',
+            'vintage_car',
+            'ncb_protection',
+            'load_fibre',
+            'load_imported',
+            'load_tuition'
+        ];
+
+        foreach ($covers as $cover) {
+            $payload[$cover] = $payload[$cover] ?? (($cover === 'cng_lpg_cover' && $vehicleType === '4w') ? 'NO' : $defaultValue);
+        }
+    }
+
+    /**
+     * Automatically calculate and populate bundle TP details for Standalone OD policies.
+     */
+    private function calculateBundleTpDetails(array &$payload, string $vehicleType): void
+    {
+        $isStandaloneOd = false;
+        if ($vehicleType === '2w') {
+            $isStandaloneOd = (strpos($payload['plan_type'] ?? '', 'Standalone OD') !== false);
+        } else {
+            $isStandaloneOd = (($payload['pol_plan_id'] ?? '') === '05');
+        }
+
+        if (!$isStandaloneOd) {
+            return;
+        }
+
+        // 1. Calculate TP start and end dates based on Registration Date (dor)
+        if (!empty($payload['dor'])) {
+            try {
+                $dorDate = \Carbon\Carbon::parse($payload['dor']);
+                
+                if (empty($payload['ble_tp_start'])) {
+                    $payload['ble_tp_start'] = $dorDate->format('Y-m-d');
+                }
+                
+                if (empty($payload['ble_tp_end'])) {
+                    $years = ($vehicleType === '2w') ? 5 : 3;
+                    $payload['ble_tp_end'] = $dorDate->copy()->addYears($years)->subDay()->format('Y-m-d');
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning("Failed to parse registration date (dor) for Standalone OD bundle TP calculation: " . ($payload['dor'] ?? ''));
+            }
+        }
+
+        // 2. Resolve prev_pol_start_date and prev_pol_end_date if not present
+        if (empty($payload['prev_pol_start_date'])) {
+            $dates = $this->calculatePreviousPolicyDates($payload['pol_start_date']);
+            $payload['prev_pol_start_date'] = $dates['prev_pol_start_date'];
+            $payload['prev_pol_end_date']   = $dates['prev_pol_end_date'];
+        }
+
+        // 3. Set bundle OD start and end dates matching the previous policy period
+        if (empty($payload['ble_od_start'])) {
+            $payload['ble_od_start'] = $payload['prev_pol_start_date'];
+        }
+        if (empty($payload['ble_od_end'])) {
+            $payload['ble_od_end'] = $payload['prev_pol_end_date'];
+        }
+
+        // 4. Default standard static fields
+        $payload['ble_tp_tenure'] = $payload['ble_tp_tenure'] ?? (($vehicleType === '2w') ? '5' : '3');
+        $payload['ble_tp_type']   = $payload['ble_tp_type'] ?? 'Liability';
+        $payload['prev_pol_type'] = $payload['prev_pol_type'] ?? 'PackagePolicy';
+
+        // 5. Resolve previous insurer name and policy number from history or use fallbacks
+        $history = app(\App\Models\VehicleHistory::class)
+            ->where('rc_number', strtolower(str_replace([' ', '-'], '', $payload['reg_no'] ?? '')))
+            ->latest('_id')
+            ->first();
+
+        $historyInsCompany = null;
+        $historyPolicyNo   = null;
+
+        if ($history && !empty($history->response)) {
+            $historyInsCompany = $history->response['insurance_company'] ?? null;
+            $historyPolicyNo   = $history->response['insurance_policy_number'] ?? null;
+        }
+
+        $payload['ble_tp_name']      = $payload['ble_tp_name'] ?? $historyInsCompany ?? 'TATA AIG GENERAL INSURANCE';
+        $payload['ble_tp_no']        = $payload['ble_tp_no'] ?? $historyPolicyNo ?? '3284920349';
+        $payload['ble_saod_prev_no'] = $payload['ble_saod_prev_no'] ?? $historyPolicyNo ?? '1234567890';
     }
 }
