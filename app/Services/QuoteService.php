@@ -272,6 +272,23 @@ class QuoteService implements QuoteServiceInterface
                 }
             }
         }
+
+        // Fallback: If place_reg_no is present but place_reg is empty
+        if (empty($payload['place_reg']) && !empty($payload['place_reg_no'])) {
+            $rtoResponse = $this->tataAigService->fetchRto();
+            if (
+                isset($rtoResponse['status']) &&
+                $rtoResponse['status'] === 200 &&
+                !empty($rtoResponse['data'])
+            ) {
+                foreach ($rtoResponse['data'] as $item) {
+                    if ((string) $item['code'] === (string) $payload['place_reg_no']) {
+                        $payload['place_reg'] = (string) $item['name'];
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     private function buildQuotePayloadBaseOnVechileType(array &$payload, bool $isTwoWheeler): void
@@ -286,6 +303,7 @@ class QuoteService implements QuoteServiceInterface
     }
     private function buildTwoWheelerPayloads(array &$payload): void
     {
+
         // 1. Map and format PA Owner Cover
         $paOwner = strtolower($payload['pa_owner'] ?? '');
         if ($paOwner === 'true' || $paOwner === 'yes' || $paOwner === '1') {
@@ -323,6 +341,27 @@ class QuoteService implements QuoteServiceInterface
         $allkeys = $this->getAllBooleanKeys($booleanKeys);
         foreach ($allkeys as $key) {
             $payload[$key] = $payload[$key] ?? 'false';
+        }
+
+        // 4. Force 2W product details
+        $payload['product_id'] = 'M300000000002';
+        $payload['product_name'] = 'Two Wheeler';
+
+        // 5. Schema Type Sanitization (cast to strings/proper booleans for UAT API validation)
+        if (isset($payload['pre_pol_ncb'])) {
+            $payload['pre_pol_ncb'] = (string) $payload['pre_pol_ncb'];
+        }
+        if (isset($payload['pol_tenure'])) {
+            $payload['pol_tenure'] = (string) $payload['pol_tenure'];
+        }
+        if (isset($payload['__finalize'])) {
+            $payload['__finalize'] = (string) $payload['__finalize'];
+        }
+        if (isset($payload['no_past_pol'])) {
+            $payload['no_past_pol'] = in_array(strtolower((string) $payload['no_past_pol']), ['true', 'y', 'yes', '1']) ? 'true' : 'false';
+        }
+        if (isset($payload['claim_last'])) {
+            $payload['claim_last'] = in_array(strtolower((string) $payload['claim_last']), ['true', 'y', 'yes', '1']) ? 'true' : 'false';
         }
 
         $payload['dep_reimb'] = $payload['dep_reimb'] ?? 'true';
@@ -596,10 +635,13 @@ class QuoteService implements QuoteServiceInterface
             $expirationDate = $startDate->copy()->addYear();
             // Only block if the current time is before the policy's expiration date
             if (now()->lessThan($expirationDate)) {
-                throw new BusinessException(
-                    "An active policy ({$existingPolicy->policy_no}) already exists for this vehicle. Quote cannot be created.",
-                    400
-                );
+                $daysRemaining = now()->diffInDays($expirationDate);
+                if ($daysRemaining > 90) {
+                    throw new BusinessException(
+                        "An active policy ({$existingPolicy->policy_no}) already exists for this vehicle with {$daysRemaining} days remaining. Renewal is only allowed within 90 days of expiration.",
+                        400
+                    );
+                }
             }
         }
     }

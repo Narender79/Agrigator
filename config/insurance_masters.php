@@ -28,28 +28,28 @@ return [
         '2w' => [
             [
                 'name' => 'Package Policy (1 Year OD + 1 Year TP)',
-                'pol_tenure' => '2',
+                'pol_tenure' => '1',
                 'plan_type' => 'Package (1 year OD + 1 year TP)',
                 'product_code' => '3187',
                 'business_type' => 'Roll Over'
             ],
             [
                 'name' => 'Package Policy (2 Years OD + 2 Years TP)',
-                'pol_tenure' => '4',
+                'pol_tenure' => '2',
                 'plan_type' => 'Package (2 years OD + 2 years TP)',
                 'product_code' => '3187',
                 'business_type' => 'Roll Over'
             ],
             [
                 'name' => 'Package Policy (3 Years OD + 3 Years TP)',
-                'pol_tenure' => '6',
+                'pol_tenure' => '3',
                 'plan_type' => 'Package (3 years OD + 3 years TP)',
                 'product_code' => '3187',
                 'business_type' => 'Roll Over'
             ],
             [
                 'name' => 'Package Policy (1 Year OD + 5 Years TP)',
-                'pol_tenure' => '7',
+                'pol_tenure' => '5',
                 'plan_type' => 'Package (1 year OD + 5 years TP)',
                 'product_code' => '3187',
                 'business_type' => 'New Business'
@@ -62,6 +62,7 @@ return [
                 'business_type' => 'Roll Over'
             ]
         ]
+
     ],
     'motor_plans' => [
         '4w' => [
