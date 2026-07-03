@@ -11,6 +11,7 @@ use App\Repositories\Interfaces\InsurerRepositoryInterface;
 use App\Repositories\Interfaces\VehicleMappingRepositoryInterface;
 use App\Models\Insurance\UsersInsurance;
 use \App\Utils\Logger;
+use Exception;
 
 class QuoteService implements QuoteServiceInterface
 {
@@ -126,7 +127,12 @@ class QuoteService implements QuoteServiceInterface
 
         // Map business_type from business_type_no if not present
         if (empty($payload['business_type']) && !empty($payload['business_type_no'])) {
-            $payload['business_type'] = $payload['business_type_no'] === '01' ? 'New Business' : 'Roll Over';
+            $btMap = [
+                '01' => 'New Business',
+                '03' => 'Roll Over',
+                '04' => 'Used Vehicle'
+            ];
+            $payload['business_type'] = $btMap[$payload['business_type_no']] ?? 'Roll Over';
         }
 
         // Parse full registration number into four parts
@@ -332,6 +338,9 @@ class QuoteService implements QuoteServiceInterface
             $payload['prev_pol_end_date']   = $dates['prev_pol_end_date'];
         }
 
+        // Validate and reset NCB if break-in is > 90 days
+        $this->validateAndResetNcb($payload);
+
         // 3. Default other covers required by the 2W API schema to 'false'
         $booleanKeys = ['special_regno'];
         $allkeys = $this->getAllBooleanKeys($booleanKeys);
@@ -402,12 +411,10 @@ class QuoteService implements QuoteServiceInterface
                     $tpEnd = clone $polStart;
                     $tpEnd->modify('+3 years -1 day');
                     $payload['ble_tp_end'] = $tpEnd->format('Y-m-d');
-                } else if ($polPlanId == '05') {
-                    $dates = $this->calculatePreviousPolicyDates($payload['pol_start_date']);
-                    $payload['prev_pol_start_date'] = $dates['prev_pol_start_date'];
-                    $payload['prev_pol_end_date']   = $dates['prev_pol_end_date'];
                 }
             }
+            // // Validate and reset NCB if break-in is > 90 days
+            // $this->validateAndResetNcb($payload);
 
             // 3. Handle PA Owner Cover
             if ($polPlanId === '05') {
@@ -444,6 +451,11 @@ class QuoteService implements QuoteServiceInterface
             }
         }
 
+        if (isset($payload['no_past_pol'])) {
+            $payload['no_past_pol'] = $this->isTruthy($payload['no_past_pol']) ? 'Y' : 'N';
+        }
+        // Validate and reset NCB if break-in is > 90 days
+        $this->validateAndResetNcb($payload);
         // 5. Default 4W-specific properties and covers
         $payload['product_name'] = $payload['product_name'] ?? 'Private Car';
         $booleanNoKeys = [
@@ -615,7 +627,7 @@ class QuoteService implements QuoteServiceInterface
             $expirationDate = $startDate->copy()->addYear();
 
             if (now()->lessThan($expirationDate)) {
-                $daysRemaining = now()->diffInDays($expirationDate);
+                $daysRemaining = (int) now()->diffInDays($expirationDate);
                 if ($daysRemaining > 90) {
                     throw new BusinessException(
                         "An active policy ({$existingPolicy->policy_no}) already exists for this vehicle with {$daysRemaining} days remaining. Renewal is only allowed within 90 days of expiration.",
@@ -626,10 +638,7 @@ class QuoteService implements QuoteServiceInterface
         }
 
         // 2. Check vehicle RC history for external policy validity
-        $history = app(\App\Models\VehicleHistory::class)
-            ->where('rc_number', strtolower($formattedRegNo))
-            ->latest('_id')
-            ->first();
+        $history = $this->getVehicleHistory($formattedRegNo);
 
         if ($history && !empty($history->response['insurance_upto'])) {
             $insuranceUptoStr = $history->response['insurance_upto'];
@@ -642,7 +651,7 @@ class QuoteService implements QuoteServiceInterface
                 }
 
                 if ($expirationDate && now()->lessThan($expirationDate)) {
-                    $daysRemaining = now()->diffInDays($expirationDate);
+                    $daysRemaining = (int) now()->diffInDays($expirationDate);
                     if ($daysRemaining > 90) {
                         throw new BusinessException(
                             "An active policy (expires on {$insuranceUptoStr}) already exists for this vehicle with {$daysRemaining} days remaining. Renewal is only allowed within 90 days of expiration.",
@@ -773,6 +782,9 @@ class QuoteService implements QuoteServiceInterface
             $payload['prev_pol_end_date']   = $dates['prev_pol_end_date'];
         }
 
+        // Validate and reset NCB if break-in is > 90 days
+        // $this->validateAndResetNcb($payload);
+
         // 3. Set bundle OD start and end dates matching the previous policy period
         if (empty($payload['ble_od_start'])) {
             $payload['ble_od_start'] = $payload['prev_pol_start_date'];
@@ -787,10 +799,7 @@ class QuoteService implements QuoteServiceInterface
         $payload['prev_pol_type'] = $payload['prev_pol_type'] ?? 'PackagePolicy';
 
         // 5. Resolve previous insurer name and policy number from history or use fallbacks
-        $history = app(\App\Models\VehicleHistory::class)
-            ->where('rc_number', strtolower(str_replace([' ', '-'], '', $payload['reg_no'] ?? '')))
-            ->latest('_id')
-            ->first();
+        $history = $this->getVehicleHistory($payload['reg_no'] ?? '');
 
         $historyInsCompany = null;
         $historyPolicyNo   = null;
@@ -803,5 +812,40 @@ class QuoteService implements QuoteServiceInterface
         $payload['ble_tp_name']      = $payload['ble_tp_name'] ?? $historyInsCompany ?? 'TATA AIG GENERAL INSURANCE';
         $payload['ble_tp_no']        = $payload['ble_tp_no'] ?? $historyPolicyNo ?? '3284920349';
         $payload['ble_saod_prev_no'] = $payload['ble_saod_prev_no'] ?? $historyPolicyNo ?? '1234567890';
+    }
+
+
+    /**
+     * Validate the gap between previous policy end date and new policy start date.
+     * If the break-in is greater than 90 days, reset NCB to 0.
+     */
+    private function validateAndResetNcb(array &$payload): void
+    {
+        if (empty($payload['prev_pol_end_date']) || empty($payload['pol_start_date'])) {
+            return;
+        }
+
+        try {
+            $prevEnd = \Carbon\Carbon::parse($payload['prev_pol_end_date']);
+            $polStart = \Carbon\Carbon::parse($payload['pol_start_date']);
+            $gapDays = (int) $prevEnd->diffInDays($polStart);
+            if ($gapDays > 90) {
+                $payload['pre_pol_ncb'] = '0';
+            }
+        } catch (Exception $e) {
+            \Illuminate\Support\Facades\Log::warning("Failed to parse dates for NCB break-in check: prev_end=" . ($payload['prev_pol_end_date'] ?? '') . ", start=" . ($payload['pol_start_date'] ?? ''));
+        }
+    }
+
+    /**
+     * Helper to get latest vehicle RC history by registration number.
+     */
+    private function getVehicleHistory(string $regNo): ?\App\Models\VehicleHistory
+    {
+        $formatted = strtolower(str_replace([' ', '-'], '', $regNo));
+        return app(\App\Models\VehicleHistory::class)
+            ->where('rc_number', $formatted)
+            ->latest('_id')
+            ->first();
     }
 }
