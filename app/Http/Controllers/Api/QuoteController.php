@@ -91,13 +91,13 @@ class QuoteController extends Controller
             }
             return Response::success(data_get($result, 'data'));
         } catch (ValidationExceptions $e) {
-
+            \Log::info($e->getMessage());
             return Response::validationFailed($e->getMessage());
         } catch (BusinessException $e) {
- 
+            \Log::info($e->getMessage());
             return Response::failed($e->getMessage(), $e->getStatusCode(), [], $e->getStatusCode());
         } catch (\Exception $e) {
-
+            \Log::info($e->getMessage());
             return Response::exeptionResponse($e);
         }
     }
