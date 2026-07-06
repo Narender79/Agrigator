@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Insurance\InsuranceRequestResponseLogs;
+use App\Utils\Logger;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Models\Insurance\InsurerIntegration;
@@ -327,6 +328,7 @@ class TataAigMasterService
                 'data' => $response['data'] ?? null
             ];
         } catch (Exception $e) {
+            Logger::logException($e);
             return [
                 'success' => false,
                 'message' => 'An error occurred during CKYC verification: ' . $e->getMessage(),
