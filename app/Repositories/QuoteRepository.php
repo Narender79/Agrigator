@@ -120,7 +120,7 @@ class QuoteRepository implements QuoteRepositoryInterface
                     'pol_plan_id'      => $resData['pol_plan_id'] ?? null,
                     'pol_plan_variant' => $resData['pol_plan_variant'] ?? null,
                     'policy_start_date' => $resData['pol_start_date'] ?? null,
-                    'net_premium'      => $netPremium,
+                    'net_premium'      => max((float) $netPremium, (float) $totalPremium),
                     'status'           => "quote_" . $response['quote_stage'], // completed / inprogress
                     'platform'         => $data['request_payload']['platform'] ?? 'droom',
                     'source'           => $data['request_payload']['source'] ?? null,
