@@ -40,7 +40,7 @@ class TataAigMasterService
             $this->baseUrl = $config['base_url'];
             $this->tokenUrl = $config['token_url'];
             $this->scope = $config['scope'] ?? '';
-            $this->timeout = 15;
+            $this->timeout = 30;
             $this->cacheKey = 'tata_aig_access_token';
             $this->expiryBufferSeconds = 60;
             $this->apiKey = $config['api_key'] ?? '';
