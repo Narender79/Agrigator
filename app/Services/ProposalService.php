@@ -22,7 +22,10 @@ class ProposalService implements ProposalServiceInterface
             $record = $this->validatePaymentBeforeProposalGeneration($payload);
 
             // 4. Send request to insurer
-            $result = $this->tataAigService->fetchProposal($this->buildTataAigProposalPayload($payload));
+            $proposalPayload = $this->buildTataAigProposalPayload($payload, $record);
+            $proposalPayload['vehicle_type'] = $record->vehicleType;
+            $result = $this->tataAigService->fetchProposal($proposalPayload);
+            // $result = $this->tataAigService->fetchProposal($this->buildTataAigProposalPayload($payload));
             //\Log::info($result);
             // die();
             if (!$result['success']) {
@@ -96,7 +99,7 @@ class ProposalService implements ProposalServiceInterface
         }
     }
 
-    private function buildTataAigProposalPayload(array $payload): array
+    private function buildTataAigProposalPayload(array $payload, $record): array
     {
         return [
             'proposer_salutation'          => $payload['salutation'],
@@ -123,7 +126,7 @@ class ProposalService implements ProposalServiceInterface
             'appointee_name'               => $payload['appointee_name'] ?? '',
             'appointee_relation'           => $payload['appointee_relation'] ?? '',
             'proposal_id'                  => $payload['proposal_id'],
-            'product_id'                   => 'M300000000001',
+            'product_id'                   => ($record->vehicleType === '2w') ? 'M300000000002' : 'M300000000001',
             'declaration'                  => 'Yes',
             'vehicle_chassis'              => $payload['vehicle_chassis'],
             'vehicle_engine'               => $payload['vehicle_engine'],
@@ -132,6 +135,10 @@ class ProposalService implements ProposalServiceInterface
             'carriedOutBy'                 => 'No',
             'inspectionFlag'               => 'false',
             '__finalize'                   => $payload['__finalize'],
+            'proposer_state'               => "",
+            'proposer_house'               => $payload['address_line_1'] ?? '',
+            'proposer_last_name'           => $payload['last_name'] ?? '',
+            'proposer_first_name'          => $payload['first_name'] ?? '',
         ];
     }
 

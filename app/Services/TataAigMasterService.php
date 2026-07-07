@@ -344,9 +344,13 @@ class TataAigMasterService
     public function verifyPayment(array $payload): array
     {
         try {
+            $vehicleType = $payload['vehicle_type'] ?? '4w';
+            unset($payload['vehicle_type']);
 
             $token = $this->getAccessToken();
-            $path = '/payment/online_response?product=Motor';
+            $path = ($vehicleType === '2w')
+                ? '/payment/verify?product=twmotor'
+                : '/payment/online_response?product=Motor';
             $url = rtrim($this->baseUrl, '/') . $path;
 
             $response = Http::withHeaders([
@@ -385,11 +389,13 @@ class TataAigMasterService
      * Download policy PDF by encrypted policy ID from Tata AIG.
      */
 
-    public function downloadPolicy(string $encryptedPolicyId): array
+    public function downloadPolicy(string $encryptedPolicyId, string $vehicleType = '4w'): array
     {
         try {
             $token = $this->getAccessToken();
-            $path = '/motor/v1/policy-download/' . $encryptedPolicyId;
+            $path = ($vehicleType === '2w')
+                ? '/tw-motor/v1/new-policy-download/' . $encryptedPolicyId
+                : '/motor/v1/policy-download/' . $encryptedPolicyId;
             $url = rtrim($this->baseUrl, '/') . $path;
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $token,

@@ -20,6 +20,7 @@ class PaymentService implements PaymentServiceInterface
     {
         try {
             $payload = [
+                'vehicle_type'         => $record->vehicleType,
                 'payment_id'           => $record->insurance_payment_id,
                 'producer_code'        => config('services.tata_aig.producer_code', '4984727878'),
                 'office_location_code' => '122015',
@@ -162,7 +163,7 @@ class PaymentService implements PaymentServiceInterface
             throw new BusinessException('Encrypted policy ID is missing.', 400);
         }
 
-        $policyRes = $this->tataAigService->downloadPolicy($record->encrypted_policy_id);
+        $policyRes = $this->tataAigService->downloadPolicy($record->encrypted_policy_id, $record->vehicleType);
         if (!$policyRes['success'] || empty($policyRes['data']['byteStream'])) {
             throw new BusinessException('Policy document is not available yet from insurer.', 400);
         }
