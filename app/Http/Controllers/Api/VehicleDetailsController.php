@@ -78,11 +78,39 @@ class VehicleDetailsController extends Controller
 
             $data1 = $response1->json();
 
+            if ((($data1['code'] ?? '') !== 'success' || empty($data1['data'])) && $data1['message'] === "authorization header is mandatory and must be correct") {
+                $tokenRes = $this->authService->getOAuthToken(true);
+                if (($tokenRes['code'] ?? '') !== 'success') {
+                    $errorMsg = !empty($tokenRes['errors']) ? implode(', ', $tokenRes['errors']) : 'Failed to retrieve OAuth token.';
+                    return Response::failed($errorMsg, 500, [], 500);
+                }
+                $dTkn = $tokenRes['data']['token'] ?? null;
+
+                $response1 = Http::withHeaders([
+                    'Authorization' => 'Bearer ' . $dTkn,
+                ])->get($gatewayUrl . '/dss/v1/vehicle-rc-details', [
+                            'rc_number' => $rcNumber,
+                        ]);
+
+                if (!$response1->successful()) {
+                    Log::error('Failed to fetch RC details', [
+                        'rc_number' => $rcNumber,
+                        'status' => $response1->status(),
+                        'body' => $response1->body(),
+                    ]);
+                    return Response::failed('Failed to retrieve vehicle details from DSS API.', $response1->status(), [
+                        'message' => 'DSS API returned a non-success status.'
+                    ], $response1->status());
+                }
+
+                $data1 = $response1->json();
+            }
+
             if (($data1['code'] ?? '') !== 'success' || empty($data1['data'])) {
                 Log::warning('DSS API returned unsuccessful code or empty data', [
                     'rc_number' => $rcNumber,
                     'response' => $data1,
-                ]);
+                ]);             
                 return Response::failed($data1['message'] ?? 'DSS API returned unsuccessful status.', 400, [], 400);
             }
 
