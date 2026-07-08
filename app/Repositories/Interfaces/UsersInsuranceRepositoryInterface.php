@@ -11,4 +11,6 @@ interface UsersInsuranceRepositoryInterface
     public function updateOrCreateByUniqueId(string $uniqueId, array $data): UsersInsurance;
 
     public function findByQuoteId(string $quoteId): ?UsersInsurance;
+
+    public function findActivePolicyByRegistrationNo(string $registrationNo): ?UsersInsurance;
 }

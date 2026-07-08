@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Models\Insurance\UsersInsurance;
 use App\Repositories\Interfaces\UsersInsuranceRepositoryInterface;
+use Override;
 
 class UsersInsuranceRepository implements UsersInsuranceRepositoryInterface
 {
@@ -31,5 +32,14 @@ class UsersInsuranceRepository implements UsersInsuranceRepositoryInterface
     public function findByQuoteId(string $quoteId): ?UsersInsurance
     {
         return $this->userInsModel->where('quote_id', $quoteId)->first();
+    }
+
+    #[Override]
+    public function findActivePolicyByRegistrationNo(string $registrationNo): ?UsersInsurance
+    {
+        return $this->userInsModel->where('registration_no', $registrationNo)
+            ->whereNotNull('policy_no')
+            ->where('policy_no', '!=', '')
+            ->first();
     }
 }

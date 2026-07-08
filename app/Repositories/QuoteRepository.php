@@ -10,6 +10,7 @@ use \App\Models\Insurance\UsersInsurance;
 use \App\Models\Insurance\QuoteRequest;
 use App\Models\VehicleHistory;
 use Illuminate\Support\Facades\Auth;
+use Override;
 
 class QuoteRepository implements QuoteRepositoryInterface
 {
@@ -202,5 +203,14 @@ class QuoteRepository implements QuoteRepositoryInterface
         $data->quote = $quote_response_payload;
         $data->vehicleInfo = $vehicleInfo;
         return $data->toArray();
+    }
+
+    public function getVehicleHistoryByRegistrationNo(string $regNo): ?VehicleHistory
+    {
+        $formatted = strtolower(str_replace([' ', '-'], '', $regNo));
+        return $this->vehHisModel
+            ->where('rc_number', $formatted)
+            ->latest('_id')
+            ->first();
     }
 }

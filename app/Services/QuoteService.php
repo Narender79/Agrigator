@@ -9,7 +9,7 @@ use App\Repositories\Interfaces\QuoteRepositoryInterface;
 use App\Services\TataAigMasterService;
 use App\Repositories\Interfaces\InsurerRepositoryInterface;
 use App\Repositories\Interfaces\VehicleMappingRepositoryInterface;
-use App\Models\Insurance\UsersInsurance;
+use App\Repositories\Interfaces\UsersInsuranceRepositoryInterface;
 use \App\Utils\Logger;
 use Exception;
 
@@ -61,7 +61,7 @@ class QuoteService implements QuoteServiceInterface
         private readonly TataAigMasterService $tataAigService,
         InsurerRepositoryInterface $insurerRepo,
         VehicleMappingRepositoryInterface $vehicleMappingRepo,
-        private UsersInsurance $UsersInsuranceModel
+        private readonly UsersInsuranceRepositoryInterface $usersInsuranceRepo
     ) {
         $this->insurerRepo = $insurerRepo;
         $this->vehicleMappingRepo = $vehicleMappingRepo;
@@ -617,10 +617,7 @@ class QuoteService implements QuoteServiceInterface
         }
 
         // 1. Check database for policy generated on our end
-        $existingPolicy = $this->UsersInsuranceModel->where('registration_no', $formattedRegNo)
-            ->whereNotNull('policy_no')
-            ->where('policy_no', '!=', '')
-            ->first();
+        $existingPolicy = $this->usersInsuranceRepo->findActivePolicyByRegistrationNo($formattedRegNo);
 
         if ($existingPolicy) {
             $startDate = \Carbon\Carbon::parse($existingPolicy->policy_start_date);
@@ -638,7 +635,7 @@ class QuoteService implements QuoteServiceInterface
         }
 
         // 2. Check vehicle RC history for external policy validity
-        $history = $this->getVehicleHistory($formattedRegNo);
+        $history = $this->quoteRepo->getVehicleHistoryByRegistrationNo($formattedRegNo);
 
         if ($history && !empty($history->response['insurance_upto'])) {
             $insuranceUptoStr = $history->response['insurance_upto'];
@@ -799,7 +796,7 @@ class QuoteService implements QuoteServiceInterface
         $payload['prev_pol_type'] = $payload['prev_pol_type'] ?? 'PackagePolicy';
 
         // 5. Resolve previous insurer name and policy number from history or use fallbacks
-        $history = $this->getVehicleHistory($payload['reg_no'] ?? '');
+        $history =  $this->quoteRepo->getVehicleHistoryByRegistrationNo($payload['reg_no'] ?? '');
 
         $historyInsCompany = null;
         $historyPolicyNo   = null;
@@ -835,17 +832,5 @@ class QuoteService implements QuoteServiceInterface
         } catch (Exception $e) {
             \Illuminate\Support\Facades\Log::warning("Failed to parse dates for NCB break-in check: prev_end=" . ($payload['prev_pol_end_date'] ?? '') . ", start=" . ($payload['pol_start_date'] ?? ''));
         }
-    }
-
-    /**
-     * Helper to get latest vehicle RC history by registration number.
-     */
-    private function getVehicleHistory(string $regNo): ?\App\Models\VehicleHistory
-    {
-        $formatted = strtolower(str_replace([' ', '-'], '', $regNo));
-        return app(\App\Models\VehicleHistory::class)
-            ->where('rc_number', $formatted)
-            ->latest('_id')
-            ->first();
     }
 }

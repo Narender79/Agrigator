@@ -2,9 +2,10 @@
 
 namespace App\Repositories\Interfaces;
 
-use App\Models\Insurance\Quote;
+// use App\Models\Insurance\Quote;
 use \App\Models\Insurance\QuoteRequest;
 use App\Models\Insurance\UsersInsurance;
+use \App\Models\VehicleHistory;
 
 interface QuoteRepositoryInterface
 {
@@ -19,4 +20,5 @@ interface QuoteRepositoryInterface
     public function updatePaymentStatus(array $data): UsersInsurance;
     public function firstOrCreateQuoteRequest(string $sessionId, array $data): QuoteRequest;
     public function getInsuranceDataByQuoteID(array $data): array;
+    public function getVehicleHistoryByRegistrationNo(string $regNo): ?VehicleHistory;
 }
