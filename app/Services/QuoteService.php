@@ -100,6 +100,11 @@ class QuoteService implements QuoteServiceInterface
             if (isset($payload['man_year'])) {
                 $payload['man_year'] = (string) $payload['man_year'];
             }
+            if (!empty($payload['dor'])) {
+                $payload['manu_month'] = date('m', strtotime($payload['dor']));
+            } else {
+                $payload['manu_month'] = '01';
+            }
         } else {
             $payload['vehicle_make_no']    = (int) $makeCode;
             $payload['vehicle_model_no']   = (int) $modelCode;
@@ -418,14 +423,14 @@ class QuoteService implements QuoteServiceInterface
 
             // 3. Handle PA Owner Cover
             if ($polPlanId === '05') {
-                $payload['pa_owner'] = 'No';
+                $payload['pa_owner'] = 'false';
                 $payload['pa_owner_tenure'] = '';
             } else {
                 if ($this->isTruthy($payload['pa_owner'] ?? '')) {
-                    $payload['pa_owner'] = 'Yes';
+                    $payload['pa_owner'] = 'true';
                     $payload['pa_owner_tenure'] = $payload['pa_owner_tenure'] ?? '1';
                 } else {
-                    $payload['pa_owner'] = 'No';
+                    $payload['pa_owner'] = 'false';
                     $payload['pa_owner_tenure'] = '';
                 }
             }

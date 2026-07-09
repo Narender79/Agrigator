@@ -139,6 +139,20 @@ class ProposalService implements ProposalServiceInterface
             'proposer_house'               => $payload['address_line_1'] ?? '',
             'proposer_last_name'           => $payload['last_name'] ?? '',
             'proposer_first_name'          => $payload['first_name'] ?? '',
+            // Bundle Policy details (fall back to previous policy if Standalone OD is chosen)
+            'bund_od_pol_number'           => $payload['pre_insurer_no'] ?? '',
+            'bund_od_insurer_name'         => $payload['pre_insurer_name'] ?? '',
+            'bund_tp_pol_number'           => $payload['pre_insurer_no'] ?? '',
+            'bund_tp_add'                  => $payload['bund_tp_add'] ?? '',
+            'bund_tp_insurer_name'         => $payload['pre_insurer_name'] ?? '',
+
+            // Previous Policy Details (map the general previous policy to both OD and TP fields)
+            'pre_od_insurer_code'          => $payload['pre_insurer_code'] ?? $payload['pre_insurer_name'] ?? '',
+            'pre_od_insurer_name'          => $payload['pre_insurer_name'] ?? '',
+            'pre_od_policy_no'             => $payload['pre_insurer_no'] ?? '',
+            'pre_tp_insurer_code'          => $payload['pre_insurer_code'] ?? $payload['pre_insurer_name'] ?? '',
+            'pre_tp_insurer_name'          => $payload['pre_insurer_name'] ?? '',
+            'pre_tp_pol_no'                => $payload['pre_insurer_no'] ?? '',
         ];
     }
 
