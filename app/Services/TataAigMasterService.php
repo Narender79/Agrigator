@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Models\Insurance\InsurerIntegration;
 use App\Repositories\Interfaces\InsurerRepositoryInterface;
+use \Illuminate\Support\Facades\Cache;
 use Exception;
 use Illuminate\Support\Facades\Crypt;
 use GuzzleHttp\Client;
@@ -90,6 +91,13 @@ class TataAigMasterService
                 return $this->accessToken;
             }
 
+            // check laravel cache first
+            $cachedToken =  Cache::get($this->cacheKey);
+            if ($cachedToken) {
+                $this->accessToken = $cachedToken;
+                return $this->accessToken;
+            }
+
             $response = Http::asForm()
                 ->timeout($this->timeout)
                 ->post($this->tokenUrl, [
@@ -113,6 +121,10 @@ class TataAigMasterService
             if (!$this->accessToken) {
                 throw new \Exception('No access token found in Tata AIG response.');
             }
+            // cache the token with TTL (expires in minus buffer seconds)
+            $exprireIn = $data['expires_in'];
+            $cacheTTL = max(60, (int)$exprireIn - $this->expiryBufferSeconds);
+            Cache::put($this->cacheKey, $this->accessToken, $cacheTTL);
 
             return $this->accessToken;
         } catch (Exception $e) {
